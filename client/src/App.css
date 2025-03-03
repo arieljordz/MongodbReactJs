@@ -1,0 +1,31 @@
+/* Default Light Mode */
+body[data-theme="light"] {
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  /* Dark Mode */
+  body[data-theme="dark"] {
+    background-color: #121212;
+    color: #ffffff;
+  }
+  
+  /* Bootstrap Dark Mode Override */
+  .navbar-dark {
+    background-color: #333 !important;
+  }
+  
+  .navbar-light {
+    background-color: #f8f9fa !important;
+  }
+  [data-theme="dark"] .modal-content {
+    background-color: #333;
+    color: white;
+  }
+  
+  [data-theme="light"] .modal-content {
+    background-color: white;
+    color: black;
+  }
+  
+  
