@@ -3,10 +3,11 @@ import ContentTable from "../customPages/ContentTable";
 import CreateContentModal from "../modals/CreateContentModal";
 import axios from "axios";
 import { Modal } from "bootstrap";
+import CreateQuestionModal from "../modals/CreateQuestionModal";
 
 function Home() {
   const [contents, setContents] = useState([]);
-  const [editingContent, setEditingContent] = useState(null);
+  const [selectedContent, setSelectedContent] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   // Function to Fetch Contents
@@ -42,10 +43,18 @@ function Home() {
 
       <CreateContentModal
         fetchContents={fetchContents}
-        editingContent={editingContent}
-        setEditingContent={setEditingContent}
+        selectedContent={selectedContent}
+        setSelectedContent={setSelectedContent}
       />
-      <ContentTable data={contents} setEditingContent={setEditingContent} fetchContents={fetchContents} />
+      <CreateQuestionModal
+        selectedContent={selectedContent}
+        setSelectedContent={setSelectedContent}
+      />
+      <ContentTable
+        data={contents}
+        setSelectedContent={setSelectedContent}
+        fetchContents={fetchContents}
+      />
     </div>
   );
 }

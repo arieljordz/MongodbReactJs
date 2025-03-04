@@ -6,8 +6,8 @@ import { useTheme } from "../customPages/ThemeContext";
 
 function CreateContentModal({
   fetchContents,
-  editingContent,
-  setEditingContent,
+  selectedContent,
+  setSelectedContent,
   show,
 }) {
   const initialFormState = {
@@ -19,14 +19,14 @@ function CreateContentModal({
   const [formData, setFormData] = useState(initialFormState);
   const { theme } = useTheme();
 
-  // Populate form when editingContent changes
+  // Populate form when selectedContent changes
   useEffect(() => {
-    if (editingContent) {
-      setFormData(editingContent);
+    if (selectedContent) {
+      setFormData(selectedContent);
     } else {
       setFormData(initialFormState);
     }
-  }, [editingContent]);
+  }, [selectedContent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,7 +37,7 @@ function CreateContentModal({
     e.preventDefault();
 
     try {
-      if (editingContent !== null && formData._id) {
+      if (selectedContent !== null && formData._id) {
         // console.log("Updating content:", formData._id);
         // Update existing content
         await axios.put(
@@ -77,7 +77,7 @@ function CreateContentModal({
       }
 
       fetchContents(); // Reload table data
-      //   setEditingContent(null); // Clear edit state
+      //   setSelectedContent(null); // Clear edit state
       setFormData(initialFormState); // Reset form fields
     } catch (error) {
       console.error("Error:", error);
@@ -87,7 +87,7 @@ function CreateContentModal({
 
   const handleCancel = () => {
     setFormData(initialFormState);
-    setEditingContent(null);
+    setSelectedContent(null);
   };
 
   return (
@@ -103,7 +103,7 @@ function CreateContentModal({
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="modalContentLabel">
-              {editingContent ? "Edit Content" : "Add New Content"}
+              {selectedContent ? "Edit Content" : "Add New Content"}
             </h5>
             <button
               type="button"
@@ -180,7 +180,7 @@ function CreateContentModal({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {editingContent ? "Update" : "Submit"}
+                  {selectedContent ? "Update" : "Submit"}
                 </button>
               </div>
             </form>

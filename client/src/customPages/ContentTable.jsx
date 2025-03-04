@@ -5,14 +5,19 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
-function ContentTable({ data, setEditingContent, fetchContents }) {
+function ContentTable({ data, setSelectedContent, fetchContents }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5); // Default items per page
+  const [itemsPerPage, setItemsPerPage] = useState(5); 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  // const [contents, setContents] = useState([data]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filtering data based on search term
+  const filteredData = data.filter((item) =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Sorting function
-  const sortedData = [...data].sort((a, b) => {
+  const sortedData = [...filteredData].sort((a, b) => {
     if (sortConfig.key) {
       const aValue = a[sortConfig.key] || "";
       const bValue = b[sortConfig.key] || "";
@@ -43,14 +48,23 @@ function ContentTable({ data, setEditingContent, fetchContents }) {
 
   // Handle page change
   const totalPages =
-    itemsPerPage === "All" ? 1 : Math.ceil(data.length / itemsPerPage);
+    itemsPerPage === "All" ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
   // Handle Edit
   const handleEdit = (item) => {
     // console.log("Editing:", item);
-    
-    setEditingContent(item);
+    setSelectedContent(item);
     const modalElement = document.getElementById("modalContent");
+    if (modalElement) {
+      const modalInstance = new Modal(modalElement);
+      modalInstance.show();
+    }
+  };
+
+  // Handle Question
+  const handleQuestion = (item) => {
+    setSelectedContent(item);
+    const modalElement = document.getElementById("modalQuestion");
     if (modalElement) {
       const modalInstance = new Modal(modalElement);
       modalInstance.show();
@@ -101,6 +115,17 @@ function ContentTable({ data, setEditingContent, fetchContents }) {
 
   return (
     <div className="container mt-3 p-0">
+      {/* Search Bar */}
+      <div className="mb-3">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Search by title..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       {/* Table */}
       <table className="table table-striped table-bordered">
         <thead className="table-dark">
@@ -177,6 +202,14 @@ function ContentTable({ data, setEditingContent, fetchContents }) {
                           onClick={() => handleEdit(item)}
                         >
                           <i className="fa fa-edit me-2"></i>Edit
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => handleQuestion(item)}
+                        >
+                          <i className="fa fa-question me-2"></i>Question
                         </button>
                       </li>
                       <li>
