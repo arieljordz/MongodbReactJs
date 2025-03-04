@@ -10,6 +10,7 @@ npm install bootstrap
 npm install axios
 npm install react-router-dom
 npm install @fortawesome/fontawesome-free
+npm install react-toastify
 
 go to src
 remove index.css
