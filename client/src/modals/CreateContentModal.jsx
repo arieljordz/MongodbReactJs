@@ -7,7 +7,6 @@ import { useTheme } from "../customPages/ThemeContext";
 function CreateContentModal({
   fetchContents,
   selectedContent,
-  setSelectedContent,
   show,
 }) {
   const initialFormState = {
@@ -77,7 +76,6 @@ function CreateContentModal({
       }
 
       fetchContents(); // Reload table data
-      //   setSelectedContent(null); // Clear edit state
       setFormData(initialFormState); // Reset form fields
     } catch (error) {
       console.error("Error:", error);
@@ -87,9 +85,9 @@ function CreateContentModal({
 
   const handleCancel = () => {
     setFormData(initialFormState);
-    setSelectedContent(null);
   };
 
+  // console.log(selectedContent);
   return (
     <div
       className={`modal fade ${show ? "show d-block" : ""} ${theme}`}

@@ -6,7 +6,7 @@ import Login from "../pages/Login";
 import Home from "../pages/Home";
 import About from "../pages/About";
 import Services from "../pages/Services";
-import Contact from "../pages/Contact";
+import Question from "../pages/Question";
 
 function Layout() {
   const location = useLocation();
@@ -14,15 +14,13 @@ function Layout() {
   return (
     <div className={theme}>
       {" "}
-      {/* Apply theme class */}
-      {/* Show Navbar only if NOT on the Login page */}
       {location.pathname !== "/" && <NavBar />}
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/question" element={<Question />} />
       </Routes>
     </div>
   );

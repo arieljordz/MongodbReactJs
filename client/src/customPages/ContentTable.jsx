@@ -4,6 +4,7 @@ import { Modal } from "bootstrap";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import Question from "../pages/Question";
 
 function ContentTable({ data, setSelectedContent, fetchContents }) {
   const [currentPage, setCurrentPage] = useState(1);

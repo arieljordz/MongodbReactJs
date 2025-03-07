@@ -4,6 +4,7 @@ import CreateContentModal from "../modals/CreateContentModal";
 import axios from "axios";
 import { Modal } from "bootstrap";
 import CreateQuestionModal from "../modals/CreateQuestionModal";
+import Question from "./Question";
 
 function Home() {
   const [contents, setContents] = useState([]);
@@ -40,7 +41,6 @@ function Home() {
       >
         Add New
       </button>
-
       <CreateContentModal
         fetchContents={fetchContents}
         selectedContent={selectedContent}
@@ -55,6 +55,7 @@ function Home() {
         setSelectedContent={setSelectedContent}
         fetchContents={fetchContents}
       />
+      <Question/>
     </div>
   );
 }
