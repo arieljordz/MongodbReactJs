@@ -50,7 +50,7 @@ app.get("/getContents/all", async (req, res) => {
 app.put("/updateContent/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description, link, category } = req.body;
 
     // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -59,15 +59,13 @@ app.put("/updateContent/:id", async (req, res) => {
 
     // Validate required fields
     if (!title?.trim() || !description?.trim()) {
-      return res
-        .status(400)
-        .json({ message: "Title and Description are required" });
+      return res.status(400).json({ message: "Title and Description are required" });
     }
 
     const updatedContent = await ContentModel.findByIdAndUpdate(
       id,
-      { title, description },
-      { new: true, runValidators: true } // Return updated doc, enforce schema validation
+      { title, description, link, category }, // Update all fields
+      { new: true, runValidators: true }
     );
 
     if (!updatedContent) {
@@ -77,9 +75,7 @@ app.put("/updateContent/:id", async (req, res) => {
     res.status(200).json(updatedContent);
   } catch (error) {
     console.error("Error updating content:", error);
-    res
-      .status(500)
-      .json({ message: "Error updating content", error: error.message });
+    res.status(500).json({ message: "Error updating content", error: error.message });
   }
 });
 
