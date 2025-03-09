@@ -1,19 +1,31 @@
-import React, { useState } from "react";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import { Modal } from "bootstrap";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import QuestionPage from "../pages/QuestionPage";
 
-function ContentTable({ data, setSelectedContent, fetchContents }) {
+function ExercisesPage() {
+  const [contents, setContents] = useState([]);
+  const [selectedContent, setSelectedContent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5); 
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  // Function to Fetch Contents
+  const fetchContents = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getContents/all");
+      setContents(response.data);
+    } catch (error) {
+      console.error("Error fetching contents:", error);
+    }
+  };
 
   // Filtering data based on search term
-  const filteredData = data.filter((item) =>
+  const filteredData = contents.filter((item) =>
     item.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -51,80 +63,44 @@ function ContentTable({ data, setSelectedContent, fetchContents }) {
   const totalPages =
     itemsPerPage === "All" ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
-  // Handle Edit
-  const handleEdit = (item) => {
-    // console.log("Editing:", item);
-    setSelectedContent(item);
-    const modalElement = document.getElementById("modalContent");
-    if (modalElement) {
-      const modalInstance = new Modal(modalElement);
-      modalInstance.show();
-    }
+  const handleRowClick = (rowIndex) => {
+    setSelectedRow(selectedRow === rowIndex ? null : rowIndex);
   };
 
-  // Handle QuestionPage
-  const handleQuestion = (item) => {
-    setSelectedContent(item);
-    const modalElement = document.getElementById("modalQuestion");
-    if (modalElement) {
-      const modalInstance = new Modal(modalElement);
-      modalInstance.show();
-    }
-  };
-
-  // Handle Delete
-  const handleDelete = async (id) => {
-    try {
-      const isYesNo = await Swal.fire({
-        title: "Confirmation",
-        text: "Are you sure you want to delete this record?",
-        icon: "question",
-        showCancelButton: true,
-        allowOutsideClick: false,
-        confirmButtonText: "Yes, Delete it",
-        cancelButtonText: "No",
-      });
-      // console.log(isYesNo.isConfirmed);
-      if (isYesNo.isConfirmed) {
-        const response = await axios.delete(
-          `http://localhost:3001/deleteContent/${id}`
-        );
-
-        if (response.status === 200) {
-          toast.success("ContentPage successfully deleted.", {
-            autoClose: 2000,
-            position: "top-right",
-            closeButton: true,
-          });
-
-          setTimeout(fetchContents, 1000);
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting content:", error);
-
-      toast.error(
-        error.response?.data?.message || "Error while deleting content.",
-        {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        }
-      );
-    }
-  };
+  // Fetch contents on page load
+  useEffect(() => {
+    fetchContents();
+  }, []);
 
   return (
-    <div className="container mt-3 p-0">
+    <div className="container mt-3">
+      <div className="content-header">
+        <div className="d-flex justify-content-start">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <a href="">Home</a>
+              </li>
+              <li className="breadcrumb-item">
+                <a href="">Exercises</a>
+              </li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+
       {/* Search Bar */}
-      <div className="mb-3">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Search by title..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="mb-3 d-flex justify-content-end">
+        <div className="d-flex align-items-center">
+          <label className="me-2 mt-1">Search:</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search by title..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -152,6 +128,17 @@ function ContentTable({ data, setSelectedContent, fetchContents }) {
             </th>
             <th>Description</th>
             <th
+              onClick={() => handleSort("link")}
+              style={{ cursor: "pointer" }}
+            >
+              Link{" "}
+              {sortConfig.key === "link"
+                ? sortConfig.direction === "asc"
+                  ? "▲"
+                  : "▼"
+                : ""}
+            </th>
+            <th
               onClick={() => handleSort("category")}
               style={{ cursor: "pointer" }}
             >
@@ -162,68 +149,22 @@ function ContentTable({ data, setSelectedContent, fetchContents }) {
                   : "▼"
                 : ""}
             </th>
-            <th className="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
           {displayItems.length > 0 ? (
-            displayItems.map((item, index) => (
-              <tr key={index}>
+            displayItems.map((item, rowIndex) => (
+              <tr
+                key={rowIndex}
+                className={selectedRow === rowIndex ? "table-primary" : ""}
+                onClick={() => handleRowClick(rowIndex)}
+                style={{ cursor: "pointer" }}
+              >
                 <td>{item._id}</td>
                 <td>{item.title}</td>
                 <td>{item.description}</td>
+                <td>{item.link}</td>
                 <td>{item.category}</td>
-                <td className="text-center">
-                  <div className="dropdown">
-                    <button
-                      className="btn btn-primary btn-sm"
-                      type="button"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      {/* SVG Burger Icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        fill="currentColor"
-                        className="bi bi-list"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M2.5 4.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5m0 3.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5m0 3.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5"
-                        />
-                      </svg>
-                    </button>
-                    <ul className="dropdown-menu">
-                      <li>
-                        <button
-                          className="dropdown-item"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <i className="fa fa-edit me-2"></i>Edit
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          className="dropdown-item"
-                          onClick={() => handleQuestion(item)}
-                        >
-                          <i className="fa fa-question me-2"></i>QuestionPage
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          className="dropdown-item text-danger"
-                          onClick={() => handleDelete(item._id)}
-                        >
-                          <i className="fa fa-trash me-2"></i>Delete
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                </td>
               </tr>
             ))
           ) : (
@@ -259,7 +200,7 @@ function ContentTable({ data, setSelectedContent, fetchContents }) {
           </select>
           <label className="ms-2">
             {" "}
-            {displayItems.length > 1 ? "rows" : "row"} of {data.length}{" "}
+            {displayItems.length > 1 ? "rows" : "row"} of {contents.length}{" "}
             {displayItems.length > 1 ? "entries" : "entry"}
           </label>
         </div>
@@ -313,4 +254,4 @@ function ContentTable({ data, setSelectedContent, fetchContents }) {
   );
 }
 
-export default ContentTable;
+export default ExercisesPage;

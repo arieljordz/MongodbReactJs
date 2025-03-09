@@ -7,7 +7,8 @@ import { useTheme } from "../customPages/ThemeContext";
 function CreateContentModal({
   fetchContents,
   selectedContent,
-  show,
+  showModal,
+  setShowModal,
 }) {
   const initialFormState = {
     title: "",
@@ -15,6 +16,7 @@ function CreateContentModal({
     link: "",
     category: "",
   };
+
   const [formData, setFormData] = useState(initialFormState);
   const { theme } = useTheme();
 
@@ -53,22 +55,14 @@ function CreateContentModal({
         });
 
         // Close modal properly
-        const modalElement = document.getElementById("modalContent");
-        if (modalElement) {
-          const closeButton = modalElement.querySelector(
-            '[data-bs-dismiss="modal"]'
-          );
-          if (closeButton) {
-            closeButton.click();
-          }
-        }
+        setShowModal(false);
       } else {
         // console.log("Creating new content:", formData);
         // Create new content
         await axios.post("http://localhost:3001/createContent", formData, {
           headers: { "Content-Type": "application/json" },
         });
-        toast.success("Content added successfully!", {
+        toast.success("ContentPage added successfully!", {
           autoClose: 2000,
           position: "top-right",
           closeButton: true,
@@ -85,12 +79,13 @@ function CreateContentModal({
 
   const handleCancel = () => {
     setFormData(initialFormState);
+    setShowModal(false);
   };
 
   // console.log(selectedContent);
   return (
     <div
-      className={`modal fade ${show ? "show d-block" : ""} ${theme}`}
+      className={`modal fade ${showModal ? "show d-block" : ""} ${theme}`}
       id="modalContent"
       tabIndex={-1}
       aria-labelledby="modalContentLabel"
@@ -101,15 +96,13 @@ function CreateContentModal({
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="modalContentLabel">
-              {selectedContent ? "Edit Content" : "Add New Content"}
+              {selectedContent ? "Edit ContentPage" : "Add New ContentPage"}
             </h5>
             <button
               type="button"
               className="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
               onClick={handleCancel}
-            />
+            ></button>
           </div>
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
@@ -172,7 +165,6 @@ function CreateContentModal({
                 <button
                   type="button"
                   className="btn btn-secondary me-2"
-                  data-bs-dismiss="modal"
                   onClick={handleCancel}
                 >
                   Cancel

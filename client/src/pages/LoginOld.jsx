@@ -4,7 +4,7 @@ function LoginOld() {
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
         <div className="card shadow p-4" style={{width: 350}}>
-            <h3 className="text-center mb-4">Login</h3>
+            <h3 className="text-center mb-4">LoginPage</h3>
             <form>
             <div className="mb-3">
                 <label htmlFor="email" className="form-label">Email address</label>
@@ -18,7 +18,7 @@ function LoginOld() {
                 <input type="checkbox" className="form-check-input" id="rememberMe" />
                 <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
             </div>
-            <button type="submit" className="btn btn-primary w-100">Login</button>
+            <button type="submit" className="btn btn-primary w-100">LoginPage</button>
             </form>
             <div className="text-center mt-3">
             <a href="#">Forgot password?</a>

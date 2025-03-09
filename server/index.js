@@ -23,7 +23,7 @@ mongoose
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Create (Add) Content
+// Create (Add) ContentPage
 app.post("/createContent", async (req, res) => {
   try {
     const newContent = await ContentModel.create(req.body);
@@ -69,7 +69,7 @@ app.put("/updateContent/:id", async (req, res) => {
     );
 
     if (!updatedContent) {
-      return res.status(404).json({ message: "Content not found" });
+      return res.status(404).json({ message: "ContentPage not found" });
     }
 
     res.status(200).json(updatedContent);
@@ -79,7 +79,7 @@ app.put("/updateContent/:id", async (req, res) => {
   }
 });
 
-// Delete Content by ID
+// Delete ContentPage by ID
 app.delete("/deleteContent/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -92,12 +92,12 @@ app.delete("/deleteContent/:id", async (req, res) => {
     const deletedContent = await ContentModel.findByIdAndDelete(id);
 
     if (!deletedContent) {
-      return res.status(404).json({ message: "Content not found" });
+      return res.status(404).json({ message: "ContentPage not found" });
     }
 
     res
       .status(200)
-      .json({ message: "Content deleted successfully", deletedContent });
+      .json({ message: "ContentPage deleted successfully", deletedContent });
   } catch (error) {
     console.error("Error deleting content:", error);
     res

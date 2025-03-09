@@ -7,9 +7,10 @@ npm install
 npm run dev
 ctrl c to stop
 npm install bootstrap
+npm install admin-lte
+npm install @fortawesome/fontawesome-free
 npm install axios
 npm install react-router-dom
-npm install @fortawesome/fontawesome-free
 npm install react-toastify
 
 go to src

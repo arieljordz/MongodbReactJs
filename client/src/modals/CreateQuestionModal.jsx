@@ -50,7 +50,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
         }
       );
 
-      alert("Question added successfully!");
+      alert("QuestionPage added successfully!");
       setFormData(initialFormState);
 
       // Close modal
@@ -82,7 +82,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="modalQuestionLabel">
-              Add Question
+              Add QuestionPage
             </h5>
             <button
               type="button"
@@ -94,7 +94,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
           </div>
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
-              {/* Question Input */}
+              {/* QuestionPage Input */}
               <div className="mb-1">
                 <label htmlFor="title" className="form-label fw-bold">
                   {`Title: ${
@@ -105,7 +105,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
               </div>
               <div className="mb-3">
                 <label htmlFor="question" className="form-label">
-                  Question
+                  QuestionPage
                 </label>
                 <textarea
                   className="form-control"

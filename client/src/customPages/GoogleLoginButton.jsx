@@ -12,8 +12,8 @@ function GoogleLoginButton() {
         // Store user data in localStorage or state (optional)
         localStorage.setItem("user", JSON.stringify(decoded));
 
-        // Redirect to Home Page
-        navigate("/Home");
+        // Redirect to ContentPage Page
+        navigate("/exercises");
       };
     
       const handleFailure = () => {
