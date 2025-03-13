@@ -1,38 +1,60 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const SearchableSelect = ({
   contents,
   selectedContent,
   setSelectedContent,
+  selectedTitle,
+  setSelectedTitle,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Handle input change and selection
+  useEffect(() => {
+    if (selectedContent?.contentId?._id) {
+      const selectedItem = contents.find(
+        (content) => content._id === selectedContent.contentId._id
+      );
+
+      if (selectedItem) {
+        setSearchTerm(selectedItem.title);
+        // setSelectedContent(selectedItem);
+        setSelectedTitle(selectedItem);
+      }
+    } else {
+      setSearchTerm("");
+      // setSelectedContent(null);
+      setSelectedTitle(null);
+    }
+  }, [selectedContent, contents]);
+
   const handleChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
 
     const selectedItem = contents.find(
-      (content) => content.title.toLowerCase() === e.target.value.toLowerCase()
+      (content) => content.title.toLowerCase() === value.toLowerCase()
     );
 
     if (selectedItem) {
-      setSelectedContent(selectedItem);
+      // setSelectedContent(selectedItem);
+      setSelectedTitle(selectedItem);
     }
-    // console.log(selectedItem);
   };
 
   return (
     <div>
-      <label className="me-2 mt-1">Select Title:</label>
+      <label className="me-2 mt-1">
+        {selectedTitle ? "Title:" : "Select Title:"}
+      </label>
       <div>
-        {/* Searchable Input with Datalist */}
         <input
           type="text"
           className="form-control mb-3"
           placeholder="Search by title..."
-          value={searchTerm}
+          value={selectedTitle ? selectedTitle.title : searchTerm}
           onChange={handleChange}
           list="titles"
+          disabled={!!selectedTitle}
         />
         <datalist id="titles">
           {contents.map((content) => (

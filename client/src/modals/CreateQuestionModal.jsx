@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import SearchableSelect from "../customPages/SearchableSelect";
 import { useTheme } from "../customPages/ThemeContext";
 
 function CreateQuestionModal({
+  fetchQuestions,
   contents,
   selectedContent,
   setSelectedContent,
   showModal,
   setShowModal,
+  selectedTitle,
+  setSelectedTitle,
 }) {
   const initialFormState = {
     question: "",
@@ -26,12 +30,13 @@ function CreateQuestionModal({
   const [formData, setFormData] = useState(initialFormState);
   const { theme } = useTheme();
 
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setFormData({ ...formData, [name]: value });
-  // };
-
-  // console.log(selectedContent.selectedContent.title);
+  useEffect(() => {
+    if (selectedContent) {
+      setFormData(selectedContent);
+    } else {
+      setFormData(initialFormState);
+    }
+  }, [selectedContent]);
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -44,27 +49,70 @@ function CreateQuestionModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Ensure at least one checkbox is checked
+    if (
+      !formData.answerACheck &&
+      !formData.answerBCheck &&
+      !formData.answerCCheck &&
+      !formData.answerDCheck
+    ) {
+      toast.warning("Please select at least one correct answer.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+      return;
+    }
     try {
-      const payload = {
-        ...formData,
-        contentId: selectedContent?.selectedContent?._id || "",
-      };
+      // console.log(selectedContent);
+      if (selectedContent !== null && formData._id) {
+        await axios.put(
+          `http://localhost:3001/updateQuestion/${formData._id}`,
+          formData,
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        toast.success("Question updated successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        });
+        setShowModal(false);
+      } else {
+        if (selectedTitle) {
+          const payload = {
+            ...formData,
+            contentId: selectedTitle?._id || "",
+          };
 
-      console.log(payload);
+          console.log(payload);
 
-      await axios.post(
-        "http://localhost:3001/createQuestionByContent",
-        payload,
-        {
-          headers: { "Content-Type": "application/json" },
+          await axios.post(
+            "http://localhost:3001/createQuestionByContent",
+            payload,
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          toast.success("Question added successfully!", {
+            autoClose: 2000,
+            position: "top-right",
+            closeButton: true,
+          });
+          // Close modal
+          // setShowModal(false);
+        } else {
+          toast.warning("Please select title first.", {
+            autoClose: 2000,
+            position: "top-right",
+            closeButton: true,
+          });
         }
-      );
-
-      alert("QuestionPage added successfully!");
+      }
+      fetchQuestions();
       setFormData(initialFormState);
-
-      // Close modal
-      document.querySelector("#modalQuestion .btn-close").click();
     } catch (error) {
       console.error("Error:", error);
       alert(
@@ -78,22 +126,22 @@ function CreateQuestionModal({
   const handleCancel = () => {
     setFormData(initialFormState);
     setShowModal(false);
+    setSelectedContent(null);
+    setSelectedTitle(null);
   };
 
   return (
     <div
       className={`modal fade ${showModal ? "show d-block" : ""} ${theme}`}
-      id="modalQuestion"
       tabIndex={-1}
-      aria-labelledby="modalQuestionLabel"
       aria-hidden="true"
       data-bs-backdrop="static"
     >
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title" id="modalQuestionLabel">
-              Add Question
+            <h5 className="modal-title">
+              {selectedContent ? "Edit Question" : "Add New Question"}
             </h5>
             <button
               type="button"
@@ -105,15 +153,17 @@ function CreateQuestionModal({
           </div>
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
-              {/* Question Input */}
               <SearchableSelect
                 contents={contents}
                 selectedContent={selectedContent}
                 setSelectedContent={setSelectedContent}
+                selectedTitle={selectedTitle}
+                setSelectedTitle={setSelectedTitle}
               />
+              {/* Question Input */}
               <div className="mb-3">
                 <label htmlFor="question" className="form-label">
-                  QuestionPage
+                  Question
                 </label>
                 <textarea
                   className="form-control"
@@ -176,7 +226,7 @@ function CreateQuestionModal({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Submit
+                  {selectedContent ? "Update" : "Submit"}
                 </button>
               </div>
             </form>

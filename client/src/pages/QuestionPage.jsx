@@ -16,31 +16,20 @@ function QuestionPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRow, setSelectedRow] = useState({});
+  const [selectedTitle, setSelectedTitle] = useState(null);
 
-  const initialFormState = {
-    question: "",
-    answerA: "",
-    answerACheck: false,
-    answerB: "",
-    answerBCheck: false,
-    answerC: "",
-    answerCCheck: false,
-    answerD: "",
-    answerDCheck: false,
-    contentId: "",
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
   useEffect(() => {
     fetchContents();
     fetchQuestions();
-  }, []);
-
+  }, []); 
+  
+  
   const fetchContents = async () => {
     try {
       const response = await axios.get("http://localhost:3001/getContents/all");
       setContents(response.data);
+      console.log(response.data);
     } catch (error) {
       console.error("Error fetching contents:", error);
     }
@@ -52,6 +41,7 @@ function QuestionPage() {
         "http://localhost:3001/getQuestions/all"
       );
       setQuestions(response.data);
+      console.log(response.data);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
@@ -79,82 +69,6 @@ function QuestionPage() {
     setExpandedTitles((prev) => ({ ...prev, [title]: !prev[title] }));
   };
 
-  // const handleRowClick = (rowIndex, item) => {
-  //   setSelectedRow((prevSelectedRow) => {
-  //     const isSameRow = prevSelectedRow === rowIndex;
-
-  //     setSelectedContent(isSameRow ? null : item);
-  //     return isSameRow ? null : rowIndex;
-  //   });
-  // };
-
-  const handleChange = (e) => {
-    const { name, type, checked, value } = e.target;
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Ensure at least one checkbox is checked
-    if (
-      !formData.answerACheck &&
-      !formData.answerBCheck &&
-      !formData.answerCCheck &&
-      !formData.answerDCheck
-    ) {
-      Swal.fire({
-        icon: "warning",
-        title: "Warning",
-        text: "Please select at least one correct answer.",
-      });
-      return; // Stop form submission
-    }
-
-    // Get the selected row's _id
-    const selectedContentId =
-      selectedContent !== null ? selectedContent._id : null;
-
-    const payload = {
-      ...formData,
-      contentId: selectedContentId,
-    };
-
-    try {
-      // console.log("Submitting Payload:", payload);
-
-      await axios.post(
-        "http://localhost:3001/createQuestionByContent",
-        payload,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      toast.success("Question added successfully!", {
-        autoClose: 2000,
-        position: "top-right",
-        closeButton: true,
-      });
-      setFormData(initialFormState);
-    } catch (error) {
-      console.error("Error:", error);
-      alert(
-        error.response?.data?.message ||
-          "Failed to add question. Please try again."
-      );
-    }
-  };
-
-  // **Reset fields when clicking Cancel**
-  const handleCancel = () => {
-    setFormData(initialFormState);
-  };
-
   // Handle Edit
   const handleEdit = (item, rowIndex) => {
     setShowModal(true);
@@ -175,24 +89,24 @@ function QuestionPage() {
       // console.log(isYesNo.isConfirmed);
       if (isYesNo.isConfirmed) {
         const response = await axios.delete(
-          `http://localhost:3001/deleteContent/${id}`
+          `http://localhost:3001/deleteQuestion/${id}`
         );
 
         if (response.status === 200) {
-          toast.success("Content successfully deleted.", {
+          toast.success("Question successfully deleted.", {
             autoClose: 2000,
             position: "top-right",
             closeButton: true,
           });
 
-          setTimeout(fetchContents, 1000);
+          setTimeout(fetchQuestions, 1000);
         }
       }
     } catch (error) {
-      console.error("Error deleting content:", error);
+      console.error("Error deleting question:", error);
 
       toast.error(
-        error.response?.data?.message || "Error while deleting content.",
+        error.response?.data?.message || "Error while deleting question.",
         {
           autoClose: 2000,
           position: "top-right",
@@ -202,22 +116,32 @@ function QuestionPage() {
     }
   };
 
-  const handleRowClick = (rowIndex, event, item) => {
+  const handleRowClick = (title, rowIndex, event, item) => {
     if (event.target.closest(".dropdown")) {
       return;
     }
-
+  
     setSelectedRow((prevSelectedRow) => {
-      const isSameRow = prevSelectedRow === rowIndex;
-
+      const currentSelectedRow = prevSelectedRow[title] ?? null; 
+      console.log(currentSelectedRow);
+      console.log(rowIndex);
+  
+      const isSameRow = currentSelectedRow === rowIndex;
+  
       setSelectedContent(isSameRow ? null : item);
-      return isSameRow ? null : rowIndex;
+  
+      return {
+        ...prevSelectedRow,
+        [title]: isSameRow ? null : rowIndex,
+      };
     });
   };
+  
 
   // Open modal for adding a new item
   const handleAddNew = () => {
     setShowModal(true);
+    setSelectedContent(null);
   };
 
   const handleClickBurger = (e, rowIndex) => {
@@ -316,10 +240,12 @@ function QuestionPage() {
                         <tr
                           key={rowIndex}
                           className={
-                            selectedRow === rowIndex ? "table-primary" : ""
+                            selectedRow[title] === rowIndex
+                              ? "table-primary"
+                              : ""
                           }
                           onClick={(event) =>
-                            handleRowClick(rowIndex, event, q)
+                            handleRowClick(title, rowIndex, event, q)
                           }
                           style={{ cursor: "pointer" }}
                         >
@@ -447,11 +373,14 @@ function QuestionPage() {
       </div>
 
       <CreateQuestionModal
+        fetchQuestions={fetchQuestions}
         contents={contents}
         selectedContent={selectedContent}
         setSelectedContent={setSelectedContent}
         showModal={showModal}
         setShowModal={setShowModal}
+        selectedTitle={selectedTitle}
+        setSelectedTitle={setSelectedTitle}
       />
     </div>
   );

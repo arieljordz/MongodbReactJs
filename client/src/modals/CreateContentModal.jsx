@@ -96,7 +96,7 @@ function CreateContentModal({
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="modalContentLabel">
-              {selectedContent ? "Edit ContentPage" : "Add New ContentPage"}
+              {selectedContent ? "Edit Content" : "Add New Content"}
             </h5>
             <button
               type="button"

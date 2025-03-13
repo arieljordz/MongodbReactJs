@@ -23,7 +23,7 @@ mongoose
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Create (Add) ContentPage
+// Create (Add) Content
 app.post("/createContent", async (req, res) => {
   try {
     const newContent = await ContentModel.create(req.body);
@@ -59,7 +59,9 @@ app.put("/updateContent/:id", async (req, res) => {
 
     // Validate required fields
     if (!title?.trim() || !description?.trim()) {
-      return res.status(400).json({ message: "Title and Description are required" });
+      return res
+        .status(400)
+        .json({ message: "Title and Description are required" });
     }
 
     const updatedContent = await ContentModel.findByIdAndUpdate(
@@ -69,17 +71,19 @@ app.put("/updateContent/:id", async (req, res) => {
     );
 
     if (!updatedContent) {
-      return res.status(404).json({ message: "ContentPage not found" });
+      return res.status(404).json({ message: "Content not found" });
     }
 
     res.status(200).json(updatedContent);
   } catch (error) {
     console.error("Error updating content:", error);
-    res.status(500).json({ message: "Error updating content", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error updating content", error: error.message });
   }
 });
 
-// Delete ContentPage by ID
+// Delete Content by ID
 app.delete("/deleteContent/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -92,12 +96,12 @@ app.delete("/deleteContent/:id", async (req, res) => {
     const deletedContent = await ContentModel.findByIdAndDelete(id);
 
     if (!deletedContent) {
-      return res.status(404).json({ message: "ContentPage not found" });
+      return res.status(404).json({ message: "Content not found" });
     }
 
     res
       .status(200)
-      .json({ message: "ContentPage deleted successfully", deletedContent });
+      .json({ message: "Content deleted successfully", deletedContent });
   } catch (error) {
     console.error("Error deleting content:", error);
     res
@@ -108,11 +112,11 @@ app.delete("/deleteContent/:id", async (req, res) => {
 
 app.post("/createQuestionByContent", async (req, res) => {
   try {
-    // console.log("Received Data:", req.body); 
+    // console.log("Received Data:", req.body);
     const newQuestion = await QuestionModel.create(req.body);
     res.status(201).json(newQuestion);
   } catch (error) {
-    console.error("Error saving question:", error); 
+    console.error("Error saving question:", error);
     res
       .status(500)
       .json({ message: "Error saving question", error: error.message });
@@ -121,12 +125,88 @@ app.post("/createQuestionByContent", async (req, res) => {
 
 app.get("/getQuestions/all", async (req, res) => {
   try {
-    const questions = await QuestionModel.find().populate("contentId", "title"); 
+    const questions = await QuestionModel.find().populate("contentId", "title");
     res.status(200).json(questions);
     // console.log("From API :", questions);
   } catch (error) {
     console.error("Error fetching questions:", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.put("/updateQuestion/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { question, answerA, answerACheck, answerB, answerBCheck, answerC, answerCCheck, answerD, answerDCheck, contentId } = req.body;
+
+    console.log("Incoming Update Request:", req.body);
+    console.log("ID:", id);
+
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid question ID" });
+    }
+
+    // Validate required fields (excluding contentId)
+    if (!question?.trim() || !answerA?.trim() || !answerB?.trim() || !answerC?.trim() || !answerD?.trim()) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Extract `_id` if `contentId` is an object
+    if (typeof contentId === "object" && contentId._id) {
+      contentId = contentId._id;
+    }
+
+    // Validate `contentId`
+    if (!contentId || !mongoose.Types.ObjectId.isValid(contentId)) {
+      console.log("Invalid contentId received:", contentId);
+      return res.status(400).json({ message: "Invalid content ID format" });
+    }
+
+    // Convert `contentId` to ObjectId
+    contentId = new mongoose.Types.ObjectId(contentId);
+    console.log("ContentId converted:", contentId);
+
+    const updatedQuestion = await QuestionModel.findByIdAndUpdate(
+      id,
+      { question, answerA, answerACheck, answerB, answerBCheck, answerC, answerCCheck, answerD, answerDCheck, contentId },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedQuestion) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    res.status(200).json(updatedQuestion);
+  } catch (error) {
+    console.error("Error updating question:", error);
+    res.status(500).json({ message: "Error updating question", error: error.message });
+  }
+});
+
+app.delete("/deleteQuestion/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if the ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Question ID" });
+    }
+
+    const deletedQuestion = await QuestionModel.findByIdAndDelete(id);
+
+    if (!deletedQuestion) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Question deleted successfully", deletedQuestion });
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting question", error: error.message });
   }
 });
 
