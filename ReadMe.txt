@@ -12,6 +12,7 @@ npm install @fortawesome/fontawesome-free
 npm install axios
 npm install react-router-dom
 npm install react-toastify
+npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons
 
 go to src
 remove index.css

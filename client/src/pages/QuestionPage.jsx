@@ -3,17 +3,21 @@ import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import SearchableSelect from "../customPages/SearchableSelect";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import CreateQuestionModal from "../modals/CreateQuestionModal";
 
 function QuestionPage() {
   const [contents, setContents] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [expandedTitles, setExpandedTitles] = useState({});
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+
   const initialFormState = {
     question: "",
     answerA: "",
@@ -26,9 +30,13 @@ function QuestionPage() {
     answerDCheck: false,
     contentId: "",
   };
-  const [formData, setFormData] = useState(initialFormState);
 
-  // Function to Fetch Contents
+  const [formData, setFormData] = useState(initialFormState);
+  useEffect(() => {
+    fetchContents();
+    fetchQuestions();
+  }, []);
+
   const fetchContents = async () => {
     try {
       const response = await axios.get("http://localhost:3001/getContents/all");
@@ -38,53 +46,47 @@ function QuestionPage() {
     }
   };
 
-  // Filtering data based on search term
-  const filteredData = contents.filter((item) =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchQuestions = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:3001/getQuestions/all"
+      );
+      setQuestions(response.data);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    }
+  };
+
+  const filteredQuestions = questions.filter((q) =>
+    q.contentId?.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Sorting function
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (sortConfig.key) {
-      const aValue = a[sortConfig.key] || "";
-      const bValue = b[sortConfig.key] || "";
+  const groupedQuestions = filteredQuestions.reduce((acc, question) => {
+    const title = question.contentId?.title || "Untitled";
+    if (!acc[title]) acc[title] = [];
+    acc[title].push(question);
+    return acc;
+  }, {});
 
-      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
+  const titles = Object.keys(groupedQuestions);
+  const totalPages = Math.ceil(titles.length / itemsPerPage);
+  const paginatedTitles = titles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  // Handle "All" option
-  const displayItems =
-    itemsPerPage === "All"
-      ? sortedData
-      : sortedData.slice(
-          (currentPage - 1) * itemsPerPage,
-          currentPage * itemsPerPage
-        );
-
-  // Handle sorting when clicking column headers
-  const handleSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
+  const toggleExpand = (title) => {
+    setExpandedTitles((prev) => ({ ...prev, [title]: !prev[title] }));
   };
 
-  // Handle page change
-  const totalPages =
-    itemsPerPage === "All" ? 1 : Math.ceil(filteredData.length / itemsPerPage);
+  // const handleRowClick = (rowIndex, item) => {
+  //   setSelectedRow((prevSelectedRow) => {
+  //     const isSameRow = prevSelectedRow === rowIndex;
 
-  const handleRowClick = (rowIndex, item) => {
-    setSelectedRow((prevSelectedRow) => {
-      const isSameRow = prevSelectedRow === rowIndex;
-
-      setSelectedContent(isSameRow ? null : item);
-      return isSameRow ? null : rowIndex;
-    });
-  };
+  //     setSelectedContent(isSameRow ? null : item);
+  //     return isSameRow ? null : rowIndex;
+  //   });
+  // };
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -98,17 +100,32 @@ function QuestionPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Ensure at least one checkbox is checked
+    if (
+      !formData.answerACheck &&
+      !formData.answerBCheck &&
+      !formData.answerCCheck &&
+      !formData.answerDCheck
+    ) {
+      Swal.fire({
+        icon: "warning",
+        title: "Warning",
+        text: "Please select at least one correct answer.",
+      });
+      return; // Stop form submission
+    }
+
     // Get the selected row's _id
     const selectedContentId =
-      selectedRow !== null ? contents[selectedRow]._id : "";
+      selectedContent !== null ? selectedContent._id : null;
 
     const payload = {
       ...formData,
-      contentId: selectedContentId, // Assign _id to contentId
+      contentId: selectedContentId,
     };
 
     try {
-      console.log("Submitting Payload:", payload);
+      // console.log("Submitting Payload:", payload);
 
       await axios.post(
         "http://localhost:3001/createQuestionByContent",
@@ -118,7 +135,11 @@ function QuestionPage() {
         }
       );
 
-      alert("Question added successfully!");
+      toast.success("Question added successfully!", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
       setFormData(initialFormState);
     } catch (error) {
       console.error("Error:", error);
@@ -134,11 +155,83 @@ function QuestionPage() {
     setFormData(initialFormState);
   };
 
-  // Fetch contents on page load
-  useEffect(() => {
-    fetchContents();
-    console.log("Selected Content Updated:", selectedContent);
-  }, [selectedContent]);
+  // Handle Edit
+  const handleEdit = (item, rowIndex) => {
+    setShowModal(true);
+  };
+
+  // Handle Delete
+  const handleDelete = async (id, rowIndex) => {
+    try {
+      const isYesNo = await Swal.fire({
+        title: "Confirmation",
+        text: "Are you sure you want to delete this record?",
+        icon: "question",
+        showCancelButton: true,
+        allowOutsideClick: false,
+        confirmButtonText: "Yes, Delete it",
+        cancelButtonText: "No",
+      });
+      // console.log(isYesNo.isConfirmed);
+      if (isYesNo.isConfirmed) {
+        const response = await axios.delete(
+          `http://localhost:3001/deleteContent/${id}`
+        );
+
+        if (response.status === 200) {
+          toast.success("Content successfully deleted.", {
+            autoClose: 2000,
+            position: "top-right",
+            closeButton: true,
+          });
+
+          setTimeout(fetchContents, 1000);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting content:", error);
+
+      toast.error(
+        error.response?.data?.message || "Error while deleting content.",
+        {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        }
+      );
+    }
+  };
+
+  const handleRowClick = (rowIndex, event, item) => {
+    if (event.target.closest(".dropdown")) {
+      return;
+    }
+
+    setSelectedRow((prevSelectedRow) => {
+      const isSameRow = prevSelectedRow === rowIndex;
+
+      setSelectedContent(isSameRow ? null : item);
+      return isSameRow ? null : rowIndex;
+    });
+  };
+
+  // Open modal for adding a new item
+  const handleAddNew = () => {
+    setShowModal(true);
+  };
+
+  const handleClickBurger = (e, rowIndex) => {
+    e.stopPropagation();
+
+    if (selectedRow !== rowIndex) {
+      e.preventDefault();
+      Swal.fire({
+        icon: "warning",
+        title: "Warning",
+        text: "Select this record first.",
+      });
+    }
+  };
 
   return (
     <div className="container mt-3">
@@ -157,138 +250,24 @@ function QuestionPage() {
         </div>
       </div>
 
-      {/* <div className="d-flex align-items-center mb-3">
-        <div className="col-1">
-          <label className="me-2 mt-1">Select Title:</label>
-        </div>
-        <div className="col-3">
-          <select
-            className="form-select"
-            value={selectedContent?._id || ""}
-            onChange={(e) => {
-              const selectedItem = contents.find(
-                (item) => item._id === e.target.value
-              );
-              setSelectedContent(selectedItem);
-            }}
-          >
-            <option value="">-- Select a Title --</option>
-            {contents.map((content) => (
-              <option key={content._id} value={content._id}>
-                {content.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div> */}
-
-      <SearchableSelect
-        contents={contents}
-        selectedContent={selectedContent}
-        setSelectedContent={setSelectedContent}
-      />
-      <div className="accordion mb-3" id="accordionQuestion">
-        {/* Accordion Item 1 */}
-        <div className="accordion-item">
-          <h2 className="accordion-header">
-            <button
-              className="accordion-button bg-dark text-white py-2 px-3"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#collapseOne"
-              style={{ color: "white" }}
-            >
-              Add Question
-            </button>
-          </h2>
-          <div
-            id="collapseOne"
-            className="accordion-collapse collapse show"
-            data-bs-parent="#accordionQuestion"
-          >
-            <div className="accordion-body p-3">
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="question" className="form-label">
-                    Question
-                  </label>
-                  <textarea
-                    className="form-control"
-                    id="question"
-                    name="question"
-                    rows={3}
-                    value={formData.question}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter your question here"
-                  />
-                </div>
-
-                {/* Answer Choices with Checkboxes & Text Inputs */}
-                <label htmlFor="question" className="form-label">
-                  Check the correct answer(s)
-                </label>
-                <div className="mb-3">
-                  {["A", "B", "C", "D"].map((letter) => (
-                    <div
-                      key={letter}
-                      className="d-flex align-items-center gap-2 mb-3"
-                    >
-                      <input
-                        className="form-check-input mb-1"
-                        type="checkbox"
-                        id={`answer${letter}Check`}
-                        name={`answer${letter}Check`}
-                        checked={formData[`answer${letter}Check`] || false}
-                        onChange={handleChange}
-                      />
-                      <label
-                        className="form-check-label"
-                        htmlFor={`answer${letter}Check`}
-                      >
-                        {`${letter}: `}
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id={`answer${letter}`}
-                        name={`answer${letter}`}
-                        value={formData[`answer${letter}`] || ""}
-                        onChange={handleChange}
-                        required
-                        placeholder={`Enter answer ${letter}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {/* Action Buttons */}
-                <div className="d-flex justify-content-end">
-                  <button
-                    type="button"
-                    className="btn btn-secondary me-2"
-                    data-bs-dismiss="modal"
-                    onClick={handleCancel}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Submit
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="card card-dark">
         <div className="card-header">
-          <h3 className="card-title">Content Questions</h3>
+          <h3 className="card-title">Questions</h3>
         </div>
         {/* /.card-header */}
         <div className="card-body">
-          {/* Search Bar */}
-          <div className="mb-3 d-flex justify-content-end">
+          {/* Search Bar and Add New Button in One Row */}
+          <div className="mb-3 d-flex align-items-center justify-content-between">
+            {/* Add New Button */}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleAddNew}
+            >
+              Add New
+            </button>
+
+            {/* Search Bar */}
             <div className="d-flex align-items-center">
               <label className="me-2 mt-1">Search:</label>
               <input
@@ -301,162 +280,179 @@ function QuestionPage() {
             </div>
           </div>
 
-          {/* Table */}
-          <table className="table table-striped table-bordered">
+          <table className="table table-bordered">
             <thead className="table-dark">
               <tr>
-                <th
-                  onClick={() => handleSort("_id")}
-                  style={{ cursor: "pointer" }}
-                >
-                  ID{" "}
-                  {sortConfig.key === "_id"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th
-                  onClick={() => handleSort("title")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Title{" "}
-                  {sortConfig.key === "title"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Description</th>
-                <th
-                  onClick={() => handleSort("link")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Link{" "}
-                  {sortConfig.key === "link"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th
-                  onClick={() => handleSort("category")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Category{" "}
-                  {sortConfig.key === "category"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
+                <th>Title</th>
+                <th>Question</th>
+                <th>Answer A</th>
+                <th>Answer B</th>
+                <th>Answer C</th>
+                <th>Answer D</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {displayItems.length > 0 ? (
-                displayItems.map((item, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className={selectedRow === rowIndex ? "table-primary" : ""}
-                    onClick={() => handleRowClick(rowIndex, item)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>{item._id}</td>
-                    <td>{item.title}</td>
-                    <td>{item.description}</td>
-                    <td>{item.link}</td>
-                    <td>{item.category}</td>
-                  </tr>
+              {paginatedTitles.length > 0 ? (
+                paginatedTitles.map((title) => (
+                  <React.Fragment key={title}>
+                    <tr className="table-info">
+                      <td colSpan="7">
+                        <button
+                          onClick={() => toggleExpand(title)}
+                          className="text-lg font-bold me-4"
+                        >
+                          <FontAwesomeIcon
+                            icon={expandedTitles[title] ? faMinus : faPlus}
+                          />
+                        </button>
+                        <strong>{title.toUpperCase()}</strong>
+                      </td>
+                    </tr>
+
+                    {expandedTitles[title] &&
+                      groupedQuestions[title].map((q, rowIndex) => (
+                        // <tr key={q._id}>
+                        <tr
+                          key={rowIndex}
+                          className={
+                            selectedRow === rowIndex ? "table-primary" : ""
+                          }
+                          onClick={(event) =>
+                            handleRowClick(rowIndex, event, q)
+                          }
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td></td>
+                          <td>{q.question}</td>
+                          <td>{q.answerA}</td>
+                          <td>{q.answerB}</td>
+                          <td>{q.answerC}</td>
+                          <td>{q.answerD}</td>
+                          <td className="text-center">
+                            <div className="dropdown">
+                              <button
+                                className="btn btn-primary btn-sm"
+                                type="button"
+                                data-bs-toggle={
+                                  selectedRow === rowIndex ? "dropdown" : ""
+                                }
+                                aria-expanded="false"
+                                onClick={(e) => handleClickBurger(e, rowIndex)}
+                              >
+                                ☰
+                              </button>
+                              <ul className="dropdown-menu">
+                                <li>
+                                  <button
+                                    className="dropdown-item"
+                                    onClick={() => handleEdit(q, rowIndex)}
+                                  >
+                                    <i className="fa fa-edit me-2"></i>Edit
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    className="dropdown-item text-danger"
+                                    onClick={() =>
+                                      handleDelete(q._id, rowIndex)
+                                    }
+                                  >
+                                    <i className="fa fa-trash me-2"></i>Delete
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </React.Fragment>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="text-center">
-                    No contents available
+                  <td colSpan="6" className="text-center">
+                    No questions available
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
 
-          {/* Pagination Controls & Items Per Page in One Row */}
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            {/* Items Per Page Dropdown */}
+          <div className="d-flex justify-content-between align-items-center mb-3 mt-3">
             <div className="d-flex align-items-center">
               <label className="me-2">Show:</label>
               <select
                 className="form-select w-auto"
                 value={itemsPerPage}
                 onChange={(e) => {
-                  setItemsPerPage(
-                    e.target.value === "All"
-                      ? "All"
-                      : parseInt(e.target.value, 10)
-                  );
-                  setCurrentPage(1); // Reset to first page
+                  setItemsPerPage(parseInt(e.target.value, 10));
+                  setCurrentPage(1);
                 }}
               >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="20">20</option>
-                <option value="All">All</option>
+                {[5, 10, 15, 20].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
               </select>
               <label className="ms-2">
                 {" "}
-                {displayItems.length > 1 ? "rows" : "row"} of {contents.length}{" "}
-                {displayItems.length > 1 ? "entries" : "entry"}
+                {paginatedTitles.length > 1 ? "rows" : "row"} of {titles.length}{" "}
+                {paginatedTitles.length > 1 ? "entries" : "entry"}
               </label>
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && itemsPerPage !== "All" && (
-              <nav>
-                <ul className="pagination mb-0">
+            <nav>
+              <ul className="pagination mb-0">
+                <li
+                  className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    Previous
+                  </button>
+                </li>
+                {Array.from({ length: totalPages }, (_, i) => (
                   <li
+                    key={i}
                     className={`page-item ${
-                      currentPage === 1 ? "disabled" : ""
+                      currentPage === i + 1 ? "active" : ""
                     }`}
                   >
                     <button
                       className="page-link"
-                      onClick={() => setCurrentPage(currentPage - 1)}
+                      onClick={() => setCurrentPage(i + 1)}
                     >
-                      Previous
+                      {i + 1}
                     </button>
                   </li>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <li
-                      key={i}
-                      className={`page-item ${
-                        currentPage === i + 1 ? "active" : ""
-                      }`}
-                    >
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </button>
-                    </li>
-                  ))}
-                  <li
-                    className={`page-item ${
-                      currentPage === totalPages ? "disabled" : ""
-                    }`}
+                ))}
+                <li
+                  className={`page-item ${
+                    currentPage === totalPages ? "disabled" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setCurrentPage(currentPage + 1)}
                   >
-                    <button
-                      className="page-link"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      Next
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-            )}
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
           </div>
         </div>
       </div>
+
+      <CreateQuestionModal
+        contents={contents}
+        selectedContent={selectedContent}
+        setSelectedContent={setSelectedContent}
+        showModal={showModal}
+        setShowModal={setShowModal}
+      />
     </div>
   );
 }

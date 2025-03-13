@@ -1,7 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
+import SearchableSelect from "../customPages/SearchableSelect";
+import { useTheme } from "../customPages/ThemeContext";
 
-function CreateQuestionModal(selectedContent, setSelectedContent) {
+function CreateQuestionModal({
+  contents,
+  selectedContent,
+  setSelectedContent,
+  showModal,
+  setShowModal,
+}) {
   const initialFormState = {
     question: "",
     answerA: "",
@@ -15,6 +24,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
     contentId: "",
   };
   const [formData, setFormData] = useState(initialFormState);
+  const { theme } = useTheme();
 
   // const handleChange = (e) => {
   //   const { name, value } = e.target;
@@ -67,11 +77,12 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
   // **Reset fields when clicking Cancel**
   const handleCancel = () => {
     setFormData(initialFormState);
+    setShowModal(false);
   };
 
   return (
     <div
-      className="modal fade"
+      className={`modal fade ${showModal ? "show d-block" : ""} ${theme}`}
       id="modalQuestion"
       tabIndex={-1}
       aria-labelledby="modalQuestionLabel"
@@ -82,7 +93,7 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="modalQuestionLabel">
-              Add QuestionPage
+              Add Question
             </h5>
             <button
               type="button"
@@ -94,15 +105,12 @@ function CreateQuestionModal(selectedContent, setSelectedContent) {
           </div>
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
-              {/* QuestionPage Input */}
-              <div className="mb-1">
-                <label htmlFor="title" className="form-label fw-bold">
-                  {`Title: ${
-                    selectedContent?.selectedContent?.title ||
-                    "No Title Available"
-                  }`}
-                </label>
-              </div>
+              {/* Question Input */}
+              <SearchableSelect
+                contents={contents}
+                selectedContent={selectedContent}
+                setSelectedContent={setSelectedContent}
+              />
               <div className="mb-3">
                 <label htmlFor="question" className="form-label">
                   QuestionPage

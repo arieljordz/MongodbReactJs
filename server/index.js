@@ -108,7 +108,7 @@ app.delete("/deleteContent/:id", async (req, res) => {
 
 app.post("/createQuestionByContent", async (req, res) => {
   try {
-    console.log("Received Data:", req.body); // Debugging
+    // console.log("Received Data:", req.body); 
     const newQuestion = await QuestionModel.create(req.body);
     res.status(201).json(newQuestion);
   } catch (error) {
@@ -116,6 +116,17 @@ app.post("/createQuestionByContent", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error saving question", error: error.message });
+  }
+});
+
+app.get("/getQuestions/all", async (req, res) => {
+  try {
+    const questions = await QuestionModel.find().populate("contentId", "title"); 
+    res.status(200).json(questions);
+    // console.log("From API :", questions);
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 

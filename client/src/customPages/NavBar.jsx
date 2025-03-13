@@ -24,7 +24,7 @@ function NavBar() {
             <ul className="navbar-nav me-auto">
               <li className="nav-item">
                 <Link className="nav-link" to="/exercises">
-                  | Excercises
+                  | Exercises
                 </Link>
               </li>
               <li className="nav-item">

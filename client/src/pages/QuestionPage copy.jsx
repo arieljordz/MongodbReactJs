@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import CreateContentModal from "../modals/CreateContentModal";
 import axios from "axios";
-
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import SearchableSelect from "../customPages/SearchableSelect";
 
-function ContentPage() {
+function QuestionPage() {
   const [contents, setContents] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -15,6 +15,19 @@ function ContentPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const initialFormState = {
+    question: "",
+    answerA: "",
+    answerACheck: false,
+    answerB: "",
+    answerBCheck: false,
+    answerC: "",
+    answerCCheck: false,
+    answerD: "",
+    answerDCheck: false,
+    contentId: "",
+  };
+  const [formData, setFormData] = useState(initialFormState);
 
   // Function to Fetch Contents
   const fetchContents = async () => {
@@ -26,16 +39,36 @@ function ContentPage() {
     }
   };
 
+  const fetchQuestions = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:3001/getQuestions/all"
+      );
+      setQuestions(response.data);
+      // console.log(response.data);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    }
+  };
+
   // Filtering data based on search term
-  const filteredData = contents.filter((item) =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = questions.filter((item) => {
+    return item.contentId && item.contentId.title
+      ? item.contentId.title.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+  });
 
   // Sorting function
   const sortedData = [...filteredData].sort((a, b) => {
     if (sortConfig.key) {
-      const aValue = a[sortConfig.key] || "";
-      const bValue = b[sortConfig.key] || "";
+      const aValue =
+        sortConfig.key === "title"
+          ? a.contentId?.title || ""
+          : a[sortConfig.key] || "";
+      const bValue =
+        sortConfig.key === "title"
+          ? b.contentId?.title || ""
+          : b[sortConfig.key] || "";
 
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
@@ -65,63 +98,7 @@ function ContentPage() {
   const totalPages =
     itemsPerPage === "All" ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
-  // Open modal for adding a new item
-  const handleAddNew = () => {
-    setShowModal(true);
-  };
-
-  // Handle Edit
-  const handleEdit = (item, rowIndex) => {
-    setShowModal(true);
-  };
-
-  // Handle Delete
-  const handleDelete = async (id, rowIndex) => {
-    try {
-      const isYesNo = await Swal.fire({
-        title: "Confirmation",
-        text: "Are you sure you want to delete this record?",
-        icon: "question",
-        showCancelButton: true,
-        allowOutsideClick: false,
-        confirmButtonText: "Yes, Delete it",
-        cancelButtonText: "No",
-      });
-      // console.log(isYesNo.isConfirmed);
-      if (isYesNo.isConfirmed) {
-        const response = await axios.delete(
-          `http://localhost:3001/deleteContent/${id}`
-        );
-
-        if (response.status === 200) {
-          toast.success("Content successfully deleted.", {
-            autoClose: 2000,
-            position: "top-right",
-            closeButton: true,
-          });
-
-          setTimeout(fetchContents, 1000);
-        }
-      }
-    } catch (error) {
-      console.error("Error deleting content:", error);
-
-      toast.error(
-        error.response?.data?.message || "Error while deleting content.",
-        {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        }
-      );
-    }
-  };
-
-  const handleRowClick = (rowIndex, event, item) => {
-    if (event.target.closest(".dropdown")) {
-      return;
-    }
-
+  const handleRowClick = (rowIndex, item) => {
     setSelectedRow((prevSelectedRow) => {
       const isSameRow = prevSelectedRow === rowIndex;
 
@@ -130,22 +107,77 @@ function ContentPage() {
     });
   };
 
-  const handleClickBurger = (e, rowIndex) => {
-    e.stopPropagation();
+  const handleChange = (e) => {
+    const { name, type, checked, value } = e.target;
 
-    if (selectedRow !== rowIndex) {
-      e.preventDefault();
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Ensure at least one checkbox is checked
+    if (
+      !formData.answerACheck &&
+      !formData.answerBCheck &&
+      !formData.answerCCheck &&
+      !formData.answerDCheck
+    ) {
       Swal.fire({
         icon: "warning",
         title: "Warning",
-        text: "Select this record first.",
+        text: "Please select at least one correct answer.",
       });
+      return; // Stop form submission
     }
+
+    // Get the selected row's _id
+    const selectedContentId =
+      selectedContent !== null ? selectedContent._id : null;
+
+    const payload = {
+      ...formData,
+      contentId: selectedContentId,
+    };
+
+    try {
+      // console.log("Submitting Payload:", payload);
+
+      await axios.post(
+        "http://localhost:3001/createQuestionByContent",
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      toast.success("Question added successfully!", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+      setFormData(initialFormState);
+    } catch (error) {
+      console.error("Error:", error);
+      alert(
+        error.response?.data?.message ||
+          "Failed to add question. Please try again."
+      );
+    }
+  };
+
+  // **Reset fields when clicking Cancel**
+  const handleCancel = () => {
+    setFormData(initialFormState);
   };
 
   // Fetch contents on page load
   useEffect(() => {
     fetchContents();
+    fetchQuestions();
   }, []);
 
   return (
@@ -158,11 +190,8 @@ function ContentPage() {
                 <a href="">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Content</a>
+                <a href="">Question</a>
               </li>
-              {/* <li className="breadcrumb-item active" aria-current="page">
-                Content
-              </li> */}
             </ol>
           </nav>
         </div>
@@ -170,22 +199,12 @@ function ContentPage() {
 
       <div className="card card-dark">
         <div className="card-header">
-          <h3 className="card-title">Contents</h3>
+          <h3 className="card-title">Questions</h3>
         </div>
         {/* /.card-header */}
         <div className="card-body">
-          {/* Search Bar and Add New Button in One Row */}
-          <div className="mb-3 d-flex align-items-center justify-content-between">
-            {/* Add New Button */}
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleAddNew}
-            >
-              Add New
-            </button>
-
-            {/* Search Bar */}
+          {/* Search Bar */}
+          <div className="mb-3 d-flex justify-content-end">
             <div className="d-flex align-items-center">
               <label className="me-2 mt-1">Search:</label>
               <input
@@ -224,30 +243,21 @@ function ContentPage() {
                       : "▼"
                     : ""}
                 </th>
-                <th>Description</th>
                 <th
-                  onClick={() => handleSort("link")}
+                  onClick={() => handleSort("question")}
                   style={{ cursor: "pointer" }}
                 >
-                  Link{" "}
-                  {sortConfig.key === "link"
+                  Question{" "}
+                  {sortConfig.key === "question"
                     ? sortConfig.direction === "asc"
                       ? "▲"
                       : "▼"
                     : ""}
                 </th>
-                <th
-                  onClick={() => handleSort("category")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Category{" "}
-                  {sortConfig.key === "category"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Action</th>
+                <th>Letter A</th>
+                <th>Letter B</th>
+                <th>Letter C</th>
+                <th>Letter D</th>
               </tr>
             </thead>
             <tbody>
@@ -256,52 +266,21 @@ function ContentPage() {
                   <tr
                     key={rowIndex}
                     className={selectedRow === rowIndex ? "table-primary" : ""}
-                    onClick={(event) => handleRowClick(rowIndex, event, item)}
+                    onClick={() => handleRowClick(rowIndex, item)}
                     style={{ cursor: "pointer" }}
                   >
                     <td>{item._id}</td>
-                    <td>{item.title}</td>
-                    <td>{item.description}</td>
-                    <td>{item.link}</td>
-                    <td>{item.category}</td>
-                    <td className="text-center">
-                      <div className="dropdown">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          type="button"
-                          data-bs-toggle={
-                            selectedRow === rowIndex ? "dropdown" : ""
-                          }
-                          aria-expanded="false"
-                          onClick={(e) => handleClickBurger(e, rowIndex)}
-                        >
-                          ☰
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button
-                              className="dropdown-item"
-                              onClick={() => handleEdit(item, rowIndex)}
-                            >
-                              <i className="fa fa-edit me-2"></i>Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              className="dropdown-item text-danger"
-                              onClick={() => handleDelete(item._id, rowIndex)}
-                            >
-                              <i className="fa fa-trash me-2"></i>Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
+                    <td>{item.contentId?.title}</td>
+                    <td>{item.question}</td>
+                    <td>{item.answerA}</td>
+                    <td>{item.answerB}</td>
+                    <td>{item.answerC}</td>
+                    <td>{item.answerD}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="6" className="text-center">
                     No contents available
                   </td>
                 </tr>
@@ -334,7 +313,7 @@ function ContentPage() {
               </select>
               <label className="ms-2">
                 {" "}
-                {displayItems.length > 1 ? "rows" : "row"} of {contents.length}{" "}
+                {displayItems.length > 1 ? "rows" : "row"} of {questions.length}{" "}
                 {displayItems.length > 1 ? "entries" : "entry"}
               </label>
             </div>
@@ -389,15 +368,106 @@ function ContentPage() {
         </div>
       </div>
 
-      <CreateContentModal
-        fetchContents={fetchContents}
+      <SearchableSelect
+        contents={contents}
         selectedContent={selectedContent}
         setSelectedContent={setSelectedContent}
-        showModal={showModal}
-        setShowModal={setShowModal}
       />
+      <div className="accordion mb-3" id="accordionQuestion">
+        {/* Accordion Item 1 */}
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button bg-dark text-white py-2 px-3"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseOne"
+              style={{ color: "white" }}
+            >
+              Add Question
+            </button>
+          </h2>
+          <div
+            id="collapseOne"
+            className="accordion-collapse collapse"
+            data-bs-parent="#accordionQuestion"
+          >
+            <div className="accordion-body p-3">
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="question" className="form-label">
+                    Question
+                  </label>
+                  <textarea
+                    className="form-control"
+                    id="question"
+                    name="question"
+                    rows={3}
+                    value={formData.question}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter your question here"
+                  />
+                </div>
+
+                {/* Answer Choices with Checkboxes & Text Inputs */}
+                <label htmlFor="question" className="form-label">
+                  Check the correct answer(s)
+                </label>
+                <div className="mb-3">
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <div
+                      key={letter}
+                      className="d-flex align-items-center gap-2 mb-3"
+                    >
+                      <input
+                        className="form-check-input mb-1"
+                        type="checkbox"
+                        id={`answer${letter}Check`}
+                        name={`answer${letter}Check`}
+                        checked={formData[`answer${letter}Check`] || false}
+                        onChange={handleChange}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`answer${letter}Check`}
+                      >
+                        {`${letter}: `}
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id={`answer${letter}`}
+                        name={`answer${letter}`}
+                        value={formData[`answer${letter}`] || ""}
+                        onChange={handleChange}
+                        required
+                        placeholder={`Enter answer ${letter}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Action Buttons */}
+                <div className="d-flex justify-content-end">
+                  <button
+                    type="button"
+                    className="btn btn-secondary me-2"
+                    data-bs-dismiss="modal"
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default ContentPage;
+export default QuestionPage;
