@@ -6,9 +6,9 @@ function NavBar() {
   const { theme, toggleTheme } = useTheme();
   return (
     <div>
-      <nav className="navbar navbar-expand-lg bg-dark navbar-dark">
+      <nav className="navbar navbar-expand-lg bg-dark navbar-dark fixed-top">
         <div className="container">
-          <Link className="navbar-brand">MyApp</Link>
+          <label className="navbar-brand">MyApp</label>
           <button
             className="navbar-toggler"
             type="button"
@@ -30,6 +30,11 @@ function NavBar() {
               <li className="nav-item">
                 <Link className="nav-link" to="/result">
                   | Result
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/account">
+                  | Student
                 </Link>
               </li>
               <li className="nav-item">

@@ -4,64 +4,78 @@ const SearchableSelect = ({
   contents,
   selectedContent,
   setSelectedContent,
-  selectedTitle,
-  setSelectedTitle,
+  formData,
+  setFormData,
+  mode,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTitle, setSearchTitle] = useState("");
+  const [filteredTitles, setFilteredTitles] = useState(contents);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
   useEffect(() => {
-    if (selectedContent?.contentId?._id) {
-      const selectedItem = contents.find(
-        (content) => content._id === selectedContent.contentId._id
-      );
-
-      if (selectedItem) {
-        setSearchTerm(selectedItem.title);
-        // setSelectedContent(selectedItem);
-        setSelectedTitle(selectedItem);
-      }
-    } else {
-      setSearchTerm("");
-      // setSelectedContent(null);
-      setSelectedTitle(null);
+    if (!selectedContent) {
+      setSearchTitle("");
     }
-  }, [selectedContent, contents]);
+  }, [selectedContent]);
+
+  useEffect(() => {
+    setFilteredTitles(contents);
+  }, [contents]);
 
   const handleChange = (e) => {
     const value = e.target.value;
-    setSearchTerm(value);
+    setSearchTitle(value);
 
-    const selectedItem = contents.find(
-      (content) => content.title.toLowerCase() === value.toLowerCase()
+    const filtered = contents.filter((content) =>
+      content.title.toLowerCase().includes(value.toLowerCase())
     );
+    setFilteredTitles(filtered);
+  };
 
-    if (selectedItem) {
-      // setSelectedContent(selectedItem);
-      setSelectedTitle(selectedItem);
-    }
+  const handleSelect = (title) => {
+    setSearchTitle(title);
+    setSelectedContent(contents.find((content) => content.title === title));
+    setDropdownVisible(false);
   };
 
   return (
     <div>
-      <label className="me-2 mt-1">
-        {selectedTitle ? "Title:" : "Select Title:"}
-      </label>
-      <div>
-        <input
-          type="text"
-          className="form-control mb-3"
-          placeholder="Search by title..."
-          value={selectedTitle ? selectedTitle.title : searchTerm}
-          onChange={handleChange}
-          list="titles"
-          disabled={!!selectedTitle}
-        />
-        <datalist id="titles">
-          {contents.map((content) => (
-            <option key={content._id} value={content.title} />
-          ))}
-        </datalist>
-      </div>
+      {mode === "ADD" && (
+        <div>
+          <label className="me-2 mt-1 mb-2">Select Title:</label>
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              className="form-control mb-3"
+              placeholder="Search by title..."
+              value={searchTitle}
+              onChange={handleChange}
+              onFocus={() => setDropdownVisible(true)}
+              onBlur={() => setTimeout(() => setDropdownVisible(false), 200)}
+            />
+            {dropdownVisible && (
+              <ul className="list-group dropdown-list">
+                {filteredTitles.length > 0 ? (
+                  filteredTitles.map((content) => (
+                    <li
+                      key={content._id}
+                      className="list-group-item"
+                      style={{ cursor: "pointer", padding: "10px" }}
+                      onMouseDown={() => handleSelect(content.title)}
+                    >
+                      {content.title}
+                    </li>
+                  ))
+                ) : (
+                  <li className="list-group-item text-muted">
+                    No titles found
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

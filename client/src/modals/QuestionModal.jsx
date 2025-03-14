@@ -5,15 +5,19 @@ import Swal from "sweetalert2";
 import SearchableSelect from "../customPages/SearchableSelect";
 import { useTheme } from "../customPages/ThemeContext";
 
-function CreateQuestionModal({
+function QuestionModal({
   fetchQuestions,
   contents,
   selectedContent,
   setSelectedContent,
   showModal,
   setShowModal,
-  selectedTitle,
-  setSelectedTitle,
+  mode,
+  setMode,
+  selectedRow,
+  setSelectedRow,
+  activeDropdown,
+  setActiveDropdown,
 }) {
   const initialFormState = {
     question: "",
@@ -49,29 +53,67 @@ function CreateQuestionModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Ensure at least one checkbox is checked
+
+    if (!selectedContent) {
+      return toast.warning("Please select a title first.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+    }
+
     if (
       !formData.answerACheck &&
       !formData.answerBCheck &&
       !formData.answerCCheck &&
       !formData.answerDCheck
     ) {
-      toast.warning("Please select at least one correct answer.", {
+      return toast.warning("Please select at least one correct answer.", {
         autoClose: 2000,
         position: "top-right",
         closeButton: true,
       });
-      return;
     }
+
     try {
-      // console.log(selectedContent);
-      if (selectedContent !== null && formData._id) {
+      const sanitizedFormData = {
+        question: formData.question || "",
+        answerA: formData.answerA || "",
+        answerACheck: !!formData.answerACheck,
+        answerB: formData.answerB || "",
+        answerBCheck: !!formData.answerBCheck,
+        answerC: formData.answerC || "",
+        answerCCheck: !!formData.answerCCheck,
+        answerD: formData.answerD || "",
+        answerDCheck: !!formData.answerDCheck,
+        contentId: selectedContent?._id || formData.contentId || "",
+      };
+
+      const headers = { headers: { "Content-Type": "application/json" } };
+
+      if (mode === "ADD") {
+        console.log("Add payload:", sanitizedFormData);
+        await axios.post(
+          "http://localhost:3001/createQuestionByContent",
+          sanitizedFormData,
+          headers
+        );
+        toast.success("Question added successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        });
+      } else {
+        const updatePayload = {
+          ...sanitizedFormData,
+          _id: formData._id,
+          contentId: selectedContent.contentId._id,
+        };
+        console.log("Update payload:", updatePayload);
         await axios.put(
           `http://localhost:3001/updateQuestion/${formData._id}`,
-          formData,
-          {
-            headers: { "Content-Type": "application/json" },
-          }
+          updatePayload,
+          headers
         );
         toast.success("Question updated successfully!", {
           autoClose: 2000,
@@ -79,47 +121,20 @@ function CreateQuestionModal({
           closeButton: true,
         });
         setShowModal(false);
-      } else {
-        if (selectedTitle) {
-          const payload = {
-            ...formData,
-            contentId: selectedTitle?._id || "",
-          };
-
-          console.log(payload);
-
-          await axios.post(
-            "http://localhost:3001/createQuestionByContent",
-            payload,
-            {
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-
-          toast.success("Question added successfully!", {
-            autoClose: 2000,
-            position: "top-right",
-            closeButton: true,
-          });
-          // Close modal
-          // setShowModal(false);
-        } else {
-          toast.warning("Please select title first.", {
-            autoClose: 2000,
-            position: "top-right",
-            closeButton: true,
-          });
-        }
       }
+
       fetchQuestions();
       setFormData(initialFormState);
     } catch (error) {
       console.error("Error:", error);
       alert(
         error.response?.data?.message ||
-          "Failed to add question. Please try again."
+          "Failed to add/update question. Please try again."
       );
     }
+
+    setSelectedRow({});
+    setActiveDropdown(null);
   };
 
   // **Reset fields when clicking Cancel**
@@ -127,7 +142,8 @@ function CreateQuestionModal({
     setFormData(initialFormState);
     setShowModal(false);
     setSelectedContent(null);
-    setSelectedTitle(null);
+    setSelectedRow({});
+    setActiveDropdown(null);
   };
 
   return (
@@ -141,7 +157,7 @@ function CreateQuestionModal({
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">
-              {selectedContent ? "Edit Question" : "Add New Question"}
+              {mode === "UPDATE" ? "Update Question" : "Add New Question"}
             </h5>
             <button
               type="button"
@@ -154,13 +170,15 @@ function CreateQuestionModal({
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
               <SearchableSelect
+                fetchQuestions={fetchQuestions}
                 contents={contents}
                 selectedContent={selectedContent}
                 setSelectedContent={setSelectedContent}
-                selectedTitle={selectedTitle}
-                setSelectedTitle={setSelectedTitle}
+                formData={formData}
+                setFormData={setFormData}
+                mode={mode}
+                setMode={setMode}
               />
-              {/* Question Input */}
               <div className="mb-3">
                 <label htmlFor="question" className="form-label">
                   Question
@@ -177,7 +195,6 @@ function CreateQuestionModal({
                 />
               </div>
 
-              {/* Answer Choices with Checkboxes & Text Inputs */}
               <label htmlFor="question" className="form-label">
                 Check the correct answer(s)
               </label>
@@ -198,9 +215,7 @@ function CreateQuestionModal({
                     <label
                       className="form-check-label"
                       htmlFor={`answer${letter}Check`}
-                    >
-                      {`${letter}: `}
-                    </label>
+                    >{`${letter}: `}</label>
                     <input
                       type="text"
                       className="form-control"
@@ -215,7 +230,6 @@ function CreateQuestionModal({
                 ))}
               </div>
 
-              {/* Action Buttons */}
               <div className="d-flex justify-content-end">
                 <button
                   type="button"
@@ -226,7 +240,7 @@ function CreateQuestionModal({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {selectedContent ? "Update" : "Submit"}
+                  {mode === "ADD" ? "Add" : "Update"}
                 </button>
               </div>
             </form>
@@ -237,4 +251,4 @@ function CreateQuestionModal({
   );
 }
 
-export default CreateQuestionModal;
+export default QuestionModal;

@@ -5,31 +5,33 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
-import CreateQuestionModal from "../modals/CreateQuestionModal";
+import QuestionModal from "../modals/QuestionModal";
+import { useTheme } from "../customPages/ThemeContext";
 
 function QuestionPage() {
   const [contents, setContents] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const { theme } = useTheme();
+  const [mode, setMode] = useState("ADD");
   const [selectedContent, setSelectedContent] = useState(null);
   const [expandedTitles, setExpandedTitles] = useState({});
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState({});
-  const [selectedTitle, setSelectedTitle] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
     fetchContents();
     fetchQuestions();
-  }, []); 
-  
-  
+  }, []);
+
   const fetchContents = async () => {
     try {
       const response = await axios.get("http://localhost:3001/getContents/all");
       setContents(response.data);
-      console.log(response.data);
+      // console.log(response.data);
     } catch (error) {
       console.error("Error fetching contents:", error);
     }
@@ -41,7 +43,7 @@ function QuestionPage() {
         "http://localhost:3001/getQuestions/all"
       );
       setQuestions(response.data);
-      console.log(response.data);
+      // console.log(response.data);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
@@ -69,9 +71,10 @@ function QuestionPage() {
     setExpandedTitles((prev) => ({ ...prev, [title]: !prev[title] }));
   };
 
-  // Handle Edit
-  const handleEdit = (item, rowIndex) => {
+  // Handle Update
+  const handleUpdate = (item, rowIndex) => {
     setShowModal(true);
+    setMode("UPDATE");
   };
 
   // Handle Delete
@@ -91,7 +94,7 @@ function QuestionPage() {
         const response = await axios.delete(
           `http://localhost:3001/deleteQuestion/${id}`
         );
-
+        setMode("DELETE");
         if (response.status === 200) {
           toast.success("Question successfully deleted.", {
             autoClose: 2000,
@@ -99,7 +102,7 @@ function QuestionPage() {
             closeButton: true,
           });
 
-          setTimeout(fetchQuestions, 1000);
+          fetchQuestions();
         }
       }
     } catch (error) {
@@ -114,51 +117,53 @@ function QuestionPage() {
         }
       );
     }
+    setSelectedRow({});
+    setActiveDropdown(null);
   };
 
   const handleRowClick = (title, rowIndex, event, item) => {
     if (event.target.closest(".dropdown")) {
       return;
     }
-  
+
     setSelectedRow((prevSelectedRow) => {
-      const currentSelectedRow = prevSelectedRow[title] ?? null; 
-      console.log(currentSelectedRow);
-      console.log(rowIndex);
-  
-      const isSameRow = currentSelectedRow === rowIndex;
-  
-      setSelectedContent(isSameRow ? null : item);
-  
-      return {
-        ...prevSelectedRow,
-        [title]: isSameRow ? null : rowIndex,
-      };
+      const isSameRow = prevSelectedRow[title] === rowIndex;
+      setActiveDropdown(null);
+      setSelectedContent(prevSelectedRow[title] === rowIndex ? null : item);
+      return isSameRow
+        ? {} // Clear all selections when clicking the same row
+        : { [title]: rowIndex }; // Reset and only select the new row
     });
   };
-  
 
   // Open modal for adding a new item
   const handleAddNew = () => {
     setShowModal(true);
     setSelectedContent(null);
+    setSelectedRow({});
+    setMode("ADD");
+    // console.log(selectedContent);
   };
 
-  const handleClickBurger = (e, rowIndex) => {
+  const handleClickBurger = (e, title, rowIndex) => {
     e.stopPropagation();
 
-    if (selectedRow !== rowIndex) {
+    const uniqueRow = `${title}-${rowIndex}`;
+
+    if (selectedRow[title] !== rowIndex) {
       e.preventDefault();
       Swal.fire({
         icon: "warning",
         title: "Warning",
         text: "Select this record first.",
       });
+    } else {
+      setActiveDropdown((prev) => (prev === uniqueRow ? null : uniqueRow));
     }
   };
 
   return (
-    <div className="container mt-3">
+    <div className={`container mt-6 ${theme}`}>
       <div className="content-header">
         <div className="d-flex justify-content-start">
           <nav aria-label="breadcrumb">
@@ -174,7 +179,7 @@ function QuestionPage() {
         </div>
       </div>
 
-      <div className="card card-dark">
+      <div className={`card card-${theme}`}>
         <div className="card-header">
           <h3 className="card-title">Questions</h3>
         </div>
@@ -205,7 +210,7 @@ function QuestionPage() {
           </div>
 
           <table className="table table-bordered">
-            <thead className="table-dark">
+            <thead className={theme === "dark" ? "table-dark" : "table-light"}>
               <tr>
                 <th>Title</th>
                 <th>Question</th>
@@ -249,7 +254,7 @@ function QuestionPage() {
                           }
                           style={{ cursor: "pointer" }}
                         >
-                          <td></td>
+                          <td className="text-center">{rowIndex + 1}</td>
                           <td>{q.question}</td>
                           <td>{q.answerA}</td>
                           <td>{q.answerB}</td>
@@ -258,23 +263,31 @@ function QuestionPage() {
                           <td className="text-center">
                             <div className="dropdown">
                               <button
-                                className="btn btn-primary btn-sm"
+                                className={`btn btn-primary btn-sm ${
+                                  activeDropdown === `${title}-${rowIndex}`
+                                    ? "show"
+                                    : ""
+                                }`}
                                 type="button"
-                                data-bs-toggle={
-                                  selectedRow === rowIndex ? "dropdown" : ""
+                                onClick={(e) =>
+                                  handleClickBurger(e, title, rowIndex)
                                 }
-                                aria-expanded="false"
-                                onClick={(e) => handleClickBurger(e, rowIndex)}
                               >
                                 ☰
                               </button>
-                              <ul className="dropdown-menu">
+                              <ul
+                                className={`dropdown-menu ${
+                                  activeDropdown === `${title}-${rowIndex}`
+                                    ? "show"
+                                    : ""
+                                }`}
+                              >
                                 <li>
                                   <button
                                     className="dropdown-item"
-                                    onClick={() => handleEdit(q, rowIndex)}
+                                    onClick={() => handleUpdate(q, rowIndex)}
                                   >
-                                    <i className="fa fa-edit me-2"></i>Edit
+                                    <i className="fa fa-edit me-2"></i>Update
                                   </button>
                                 </li>
                                 <li>
@@ -315,7 +328,7 @@ function QuestionPage() {
                   setCurrentPage(1);
                 }}
               >
-                {[5, 10, 15, 20].map((size) => (
+                {[5, 10, 15, 20, 100].map((size) => (
                   <option key={size} value={size}>
                     {size}
                   </option>
@@ -372,15 +385,19 @@ function QuestionPage() {
         </div>
       </div>
 
-      <CreateQuestionModal
+      <QuestionModal
         fetchQuestions={fetchQuestions}
         contents={contents}
         selectedContent={selectedContent}
         setSelectedContent={setSelectedContent}
         showModal={showModal}
         setShowModal={setShowModal}
-        selectedTitle={selectedTitle}
-        setSelectedTitle={setSelectedTitle}
+        mode={mode}
+        setMode={setMode}
+        selectedRow={selectedRow}
+        setSelectedRow={setSelectedRow}
+        activeDropdown={activeDropdown}
+        setActiveDropdown={setActiveDropdown}
       />
     </div>
   );

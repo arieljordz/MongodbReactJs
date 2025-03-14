@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
+const PersonModel = require("./models/Person");
 const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
+const AnswerModel = require("./models/Answers");
 
 const app = express();
 app.use(express.json());
@@ -23,7 +25,86 @@ mongoose
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Create (Add) Content
+app.post("/createPerson", async (req, res) => {
+  try {
+    const newPerson = await PersonModel.create(req.body);
+    res.status(201).json(newPerson);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating person", error: error.message });
+  }
+});
+
+app.get("/getPersons/all", async (req, res) => {
+  try {
+    const people = await PersonModel.find();
+    res.status(200).json(people);
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.put("/updatePerson/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstname, middlename, lastname, email, userType } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid content ID" });
+    }
+
+    if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !userType?.trim()) {
+      return res
+        .status(400)
+        .json({ message: "Title and Description are required" });
+    }
+
+    const updatedPerson = await PersonModel.findByIdAndUpdate(
+      id,
+      { firstname, middlename, lastname, email, userType },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPerson) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.status(200).json(updatedPerson);
+  } catch (error) {
+    console.error("Error updating student:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating student", error: error.message });
+  }
+});
+
+app.delete("/deletePerson/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid content ID" });
+    }
+
+    const deletedPerson = await PersonModel.findByIdAndDelete(id);
+
+    if (!deletedPerson) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Student deleted successfully", deletedPerson });
+  } catch (error) {
+    console.error("Error deleting student:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting student", error: error.message });
+  }
+});
+
 app.post("/createContent", async (req, res) => {
   try {
     const newContent = await ContentModel.create(req.body);
@@ -35,7 +116,6 @@ app.post("/createContent", async (req, res) => {
   }
 });
 
-// Read (Get All) Contents
 app.get("/getContents/all", async (req, res) => {
   try {
     const contents = await ContentModel.find();
@@ -46,18 +126,15 @@ app.get("/getContents/all", async (req, res) => {
   }
 });
 
-// Update (By Id) Contents
 app.put("/updateContent/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, link, category } = req.body;
 
-    // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid content ID" });
     }
 
-    // Validate required fields
     if (!title?.trim() || !description?.trim()) {
       return res
         .status(400)
@@ -66,7 +143,7 @@ app.put("/updateContent/:id", async (req, res) => {
 
     const updatedContent = await ContentModel.findByIdAndUpdate(
       id,
-      { title, description, link, category }, // Update all fields
+      { title, description, link, category },
       { new: true, runValidators: true }
     );
 
@@ -83,12 +160,10 @@ app.put("/updateContent/:id", async (req, res) => {
   }
 });
 
-// Delete Content by ID
 app.delete("/deleteContent/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if the ID is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid content ID" });
     }
@@ -112,8 +187,13 @@ app.delete("/deleteContent/:id", async (req, res) => {
 
 app.post("/createQuestionByContent", async (req, res) => {
   try {
-    // console.log("Received Data:", req.body);
-    const newQuestion = await QuestionModel.create(req.body);
+    const { question, ...otherData } = req.body;
+
+    if (!question || question.trim() === "") {
+      return res.status(400).json({ message: "Question field is required." });
+    }
+
+    const newQuestion = await QuestionModel.create({ question, ...otherData });
     res.status(201).json(newQuestion);
   } catch (error) {
     console.error("Error saving question:", error);
@@ -127,7 +207,6 @@ app.get("/getQuestions/all", async (req, res) => {
   try {
     const questions = await QuestionModel.find().populate("contentId", "title");
     res.status(200).json(questions);
-    // console.log("From API :", questions);
   } catch (error) {
     console.error("Error fetching questions:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -137,39 +216,62 @@ app.get("/getQuestions/all", async (req, res) => {
 app.put("/updateQuestion/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    let { question, answerA, answerACheck, answerB, answerBCheck, answerC, answerCCheck, answerD, answerDCheck, contentId } = req.body;
+    let {
+      question,
+      answerA,
+      answerACheck,
+      answerB,
+      answerBCheck,
+      answerC,
+      answerCCheck,
+      answerD,
+      answerDCheck,
+      contentId,
+    } = req.body;
 
     console.log("Incoming Update Request:", req.body);
     console.log("ID:", id);
 
-    // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid question ID" });
     }
 
-    // Validate required fields (excluding contentId)
-    if (!question?.trim() || !answerA?.trim() || !answerB?.trim() || !answerC?.trim() || !answerD?.trim()) {
+    if (
+      !question?.trim() ||
+      !answerA?.trim() ||
+      !answerB?.trim() ||
+      !answerC?.trim() ||
+      !answerD?.trim()
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Extract `_id` if `contentId` is an object
     if (typeof contentId === "object" && contentId._id) {
       contentId = contentId._id;
     }
 
-    // Validate `contentId`
     if (!contentId || !mongoose.Types.ObjectId.isValid(contentId)) {
       console.log("Invalid contentId received:", contentId);
       return res.status(400).json({ message: "Invalid content ID format" });
     }
 
-    // Convert `contentId` to ObjectId
     contentId = new mongoose.Types.ObjectId(contentId);
     console.log("ContentId converted:", contentId);
 
     const updatedQuestion = await QuestionModel.findByIdAndUpdate(
       id,
-      { question, answerA, answerACheck, answerB, answerBCheck, answerC, answerCCheck, answerD, answerDCheck, contentId },
+      {
+        question,
+        answerA,
+        answerACheck,
+        answerB,
+        answerBCheck,
+        answerC,
+        answerCCheck,
+        answerD,
+        answerDCheck,
+        contentId,
+      },
       { new: true, runValidators: true }
     );
 
@@ -180,7 +282,9 @@ app.put("/updateQuestion/:id", async (req, res) => {
     res.status(200).json(updatedQuestion);
   } catch (error) {
     console.error("Error updating question:", error);
-    res.status(500).json({ message: "Error updating question", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error updating question", error: error.message });
   }
 });
 
@@ -188,7 +292,6 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if the ID is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Question ID" });
     }
@@ -207,6 +310,34 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting question", error: error.message });
+  }
+});
+
+app.post("/saveAnswerByQuestion", async (req, res) => {
+  try {
+    const { studentId, contentId, questionId, selectedAnswers } = req.body;
+
+    if (!studentId || !contentId || !questionId || !selectedAnswers) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newAnswer = new AnswerModel({
+      studentId,
+      contentId,
+      questionId,
+      selectedAnswers,
+      dateSubmitted: new Date(),
+    });
+
+    await newAnswer.save();
+    res
+      .status(201)
+      .json({ message: "Answer saved successfully", data: newAnswer });
+  } catch (error) {
+    console.error("Error saving answer:", error);
+    res
+      .status(500)
+      .json({ message: "Error creating answer", error: error.message });
   }
 });
 

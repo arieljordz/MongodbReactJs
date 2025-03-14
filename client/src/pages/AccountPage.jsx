@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ContentModal from "../modals/ContentModal";
+import StudentModal from "../modals/StudentModal";
 import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
@@ -7,12 +7,12 @@ import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "../customPages/ThemeContext";
 
-function ContentPage() {
+function AccountPage() {
   const location = useLocation();
   const userData = location.state || {};
   const { theme } = useTheme();
-  const [contents, setContents] = useState([]);
-  const [selectedContent, setSelectedContent] = useState(null);
+  const [contents, setStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [mode, setMode] = useState("ADD");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -22,12 +22,12 @@ function ContentPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  console.log("Content User Data:", userData);
-  // Function to Fetch Contents
-  const fetchContents = async () => {
+  console.log("Student User Data:", userData);
+  // Function to Fetch Students
+  const fetchStudents = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getContents/all");
-      setContents(response.data);
+      const response = await axios.get("http://localhost:3001/getPersons/all");
+      setStudents(response.data);
     } catch (error) {
       console.error("Error fetching contents:", error);
     }
@@ -35,7 +35,7 @@ function ContentPage() {
 
   // Filtering data based on search term
   const filteredData = contents.filter((item) =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+    item.lastname.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Sorting function
@@ -77,7 +77,7 @@ function ContentPage() {
     setShowModal(true);
     setMode("ADD");
     setSelectedRow(null);
-    setSelectedContent(null);
+    setSelectedStudent(null);
   };
 
   // Handle Update
@@ -101,16 +101,16 @@ function ContentPage() {
       // console.log(isYesNo.isConfirmed);
       if (isYesNo.isConfirmed) {
         const response = await axios.delete(
-          `http://localhost:3001/deleteContent/${id}`
+          `http://localhost:3001/deletePerson/${id}`
         );
 
         if (response.status === 200) {
-          toast.success("Content successfully deleted.", {
+          toast.success("Student successfully deleted.", {
             autoClose: 2000,
             position: "top-right",
             closeButton: true,
           });
-          fetchContents();
+          fetchStudents();
         }
       }
     } catch (error) {
@@ -126,7 +126,7 @@ function ContentPage() {
       );
     }
     setSelectedRow(null);
-    setSelectedContent(null);
+    setSelectedStudent(null);
     setActiveDropdown(null);
   };
 
@@ -138,7 +138,7 @@ function ContentPage() {
     setSelectedRow((prevSelectedRow) => {
       const isSameRow = prevSelectedRow === rowIndex;
       setActiveDropdown(null);
-      setSelectedContent(isSameRow ? null : item);
+      setSelectedStudent(isSameRow ? null : item);
       return isSameRow ? null : rowIndex;
     });
   };
@@ -159,7 +159,7 @@ function ContentPage() {
   };
 
   useEffect(() => {
-    fetchContents();
+    fetchStudents();
   }, []);
 
   return (
@@ -172,11 +172,8 @@ function ContentPage() {
                 <a href="">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Content</a>
+                <a href="">Student</a>
               </li>
-              {/* <li className="breadcrumb-item active" aria-current="page">
-                Content
-              </li> */}
             </ol>
           </nav>
         </div>
@@ -184,7 +181,7 @@ function ContentPage() {
 
       <div className={`card card-${theme}`}>
         <div className="card-header">
-          <h3 className="card-title">Contents</h3>
+          <h3 className="card-title">Students</h3>
         </div>
         {/* /.card-header */}
         <div className="card-body">
@@ -218,34 +215,45 @@ function ContentPage() {
               <tr>
                 <th>Count</th>
                 <th
-                  onClick={() => handleSort("title")}
+                  onClick={() => handleSort("firstname")}
                   style={{ cursor: "pointer" }}
                 >
-                  Title{" "}
-                  {sortConfig.key === "title"
+                  First Name{" "}
+                  {sortConfig.key === "firstname"
                     ? sortConfig.direction === "asc"
                       ? "▲"
                       : "▼"
                     : ""}
                 </th>
-                <th>Description</th>
+                <th>Middle Name</th>
                 <th
-                  onClick={() => handleSort("link")}
+                  onClick={() => handleSort("lastname")}
                   style={{ cursor: "pointer" }}
                 >
-                  Link{" "}
-                  {sortConfig.key === "link"
+                  Last Name{" "}
+                  {sortConfig.key === "lastname"
                     ? sortConfig.direction === "asc"
                       ? "▲"
                       : "▼"
                     : ""}
                 </th>
                 <th
-                  onClick={() => handleSort("category")}
+                  onClick={() => handleSort("email")}
                   style={{ cursor: "pointer" }}
                 >
-                  Category{" "}
-                  {sortConfig.key === "category"
+                  Email{" "}
+                  {sortConfig.key === "email"
+                    ? sortConfig.direction === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  onClick={() => handleSort("userType")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Role{" "}
+                  {sortConfig.key === "userType"
                     ? sortConfig.direction === "asc"
                       ? "▲"
                       : "▼"
@@ -264,10 +272,11 @@ function ContentPage() {
                     style={{ cursor: "pointer" }}
                   >
                     <td className="text-center">{rowIndex + 1}</td>
-                    <td>{item.title}</td>
-                    <td>{item.description}</td>
-                    <td>{item.link}</td>
-                    <td>{item.category}</td>
+                    <td>{item.firstname}</td>
+                    <td>{item.middlename}</td>
+                    <td>{item.lastname}</td>
+                    <td>{item.email}</td>
+                    <td>{item.userType}</td>
                     <td className="text-center">
                       <div className="dropdown">
                         <button
@@ -395,10 +404,10 @@ function ContentPage() {
         </div>
       </div>
 
-      <ContentModal
-        fetchContents={fetchContents}
-        selectedContent={selectedContent}
-        setSelectedContent={setSelectedContent}
+      <StudentModal
+        fetchStudents={fetchStudents}
+        selectedStudent={selectedStudent}
+        setSelectedStudent={setSelectedStudent}
         showModal={showModal}
         setShowModal={setShowModal}
         mode={mode}
@@ -412,4 +421,4 @@ function ContentPage() {
   );
 }
 
-export default ContentPage;
+export default AccountPage;

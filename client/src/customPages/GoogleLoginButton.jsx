@@ -1,31 +1,29 @@
-import React from 'react'
-import { GoogleLogin } from "@react-oauth/google"
-import jwt_decode from "jwt-decode"
-import { useNavigate } from "react-router-dom"
+import React from "react";
+import { GoogleLogin } from "@react-oauth/google";
+import jwt_decode from "jwt-decode";
 
-function GoogleLoginButton() {
-    const navigate = useNavigate();
-    const handleSuccess = (response) => {
-        const decoded = jwt_decode(response.credential);
-        console.log("User Info:", decoded);
+function GoogleLoginButton({ userDetails, navigate }) {
+  const handleSuccess = (response) => {
+    const decoded = jwt_decode(response.credential);
 
-        // Store user data in localStorage or state (optional)
-        localStorage.setItem("user", JSON.stringify(decoded));
+    // Store user data in localStorage or state
+    const userData = {
+      ...decoded,
+      ...userDetails,
+    };
+    localStorage.setItem("user", JSON.stringify(userData));
 
-        // Redirect to ContentPage Page
-        navigate("/exercises");
-      };
-    
-      const handleFailure = () => {
-        console.log("Google login failed");
-      };
-    
-      return (
-        <GoogleLogin
-          onSuccess={handleSuccess}
-          onError={handleFailure}
-        />
-      );
+    // Redirect based on user type
+    navigate(userDetails.userType === "student" ? "/exercises" : "/content", {
+      state: userData,
+    });
+  };
+
+  const handleFailure = () => {
+    console.log("Google login failed");
+  };
+
+  return <GoogleLogin onSuccess={handleSuccess} onError={handleFailure} />;
 }
 
-export default GoogleLoginButton
+export default GoogleLoginButton;

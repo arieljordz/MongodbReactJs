@@ -4,11 +4,18 @@ import { toast } from "react-toastify";
 // import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
-function CreateContentModal({
+function ContentModal({
   fetchContents,
   selectedContent,
+  setSelectedContent,
   showModal,
   setShowModal,
+  mode,
+  setMode,
+  selectedRow,
+  setSelectedRow,
+  activeDropdown,
+  setActiveDropdown,
 }) {
   const initialFormState = {
     title: "",
@@ -38,9 +45,18 @@ function CreateContentModal({
     e.preventDefault();
 
     try {
-      if (selectedContent !== null && formData._id) {
-        // console.log("Updating content:", formData._id);
-        // Update existing content
+      if (mode === "ADD") {
+        console.log("Add payload:", formData);
+        await axios.post("http://localhost:3001/createContent", formData, {
+          headers: { "Content-Type": "application/json" },
+        });
+        toast.success("Content added successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        });
+      } else {
+        console.log("Update payload:", formData);
         await axios.put(
           `http://localhost:3001/updateContent/${formData._id}`,
           formData,
@@ -53,50 +69,41 @@ function CreateContentModal({
           position: "top-right",
           closeButton: true,
         });
-
-        // Close modal properly
         setShowModal(false);
-      } else {
-        // console.log("Creating new content:", formData);
-        // Create new content
-        await axios.post("http://localhost:3001/createContent", formData, {
-          headers: { "Content-Type": "application/json" },
-        });
-        toast.success("ContentPage added successfully!", {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
       }
 
-      fetchContents(); // Reload table data
-      setFormData(initialFormState); // Reset form fields
+      fetchContents();
+      setFormData(initialFormState);
     } catch (error) {
       console.error("Error:", error);
       alert(error.response?.data?.message || "Failed to process request.");
     }
+    setSelectedRow(null);
+    setSelectedContent(null);
+    setActiveDropdown(null);
   };
 
   const handleCancel = () => {
     setFormData(initialFormState);
     setShowModal(false);
+    setSelectedRow(null);
+    setSelectedContent(null);
+    setActiveDropdown(null);
   };
 
   // console.log(selectedContent);
   return (
     <div
       className={`modal fade ${showModal ? "show d-block" : ""} ${theme}`}
-      id="modalContent"
       tabIndex={-1}
-      aria-labelledby="modalContentLabel"
       aria-hidden="true"
       data-bs-backdrop="static"
     >
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title" id="modalContentLabel">
-              {selectedContent ? "Edit Content" : "Add New Content"}
+            <h5 className="modal-title">
+              {mode === "ADD" ? "Add New Content" : "Update Content"}
             </h5>
             <button
               type="button"
@@ -118,6 +125,7 @@ function CreateContentModal({
                   value={formData.title}
                   onChange={handleChange}
                   required
+                  placeholder="Enter Title"
                 />
               </div>
               <div className="mb-3">
@@ -132,6 +140,7 @@ function CreateContentModal({
                   value={formData.description}
                   onChange={handleChange}
                   required
+                  placeholder="Enter Description"
                 />
               </div>
               <div className="mb-3">
@@ -145,6 +154,8 @@ function CreateContentModal({
                   name="link"
                   value={formData.link}
                   onChange={handleChange}
+                  required
+                  placeholder="Enter Link"
                 />
               </div>
               <div className="mb-3">
@@ -159,6 +170,7 @@ function CreateContentModal({
                   value={formData.category}
                   onChange={handleChange}
                   required
+                  placeholder="Enter Category"
                 />
               </div>
               <div className="d-flex justify-content-end">
@@ -170,7 +182,7 @@ function CreateContentModal({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {selectedContent ? "Update" : "Submit"}
+                  {mode === "ADD" ? "Add" : "Update"}
                 </button>
               </div>
             </form>
@@ -181,4 +193,4 @@ function CreateContentModal({
   );
 }
 
-export default CreateContentModal;
+export default ContentModal;

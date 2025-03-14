@@ -6,6 +6,7 @@ import LoginPage from "../pages/LoginPage";
 import ContentPage from "../pages/ContentPage";
 import ExercisesPage from "../pages/ExercisesPage";
 import ResultPage from "../pages/ResultPage";
+import AccountPage from "../pages/AccountPage";
 import QuestionPage from "../pages/QuestionPage";
 import LoadingSpinner from "../customPages/LoadingSpinner";
 
@@ -21,6 +22,7 @@ function Layout() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/exercises" element={<ExercisesPage />} />
         <Route path="/result" element={<ResultPage />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route path="/content" element={<ContentPage />} />
         <Route path="/question" element={<QuestionPage />} />
       </Routes>

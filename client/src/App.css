@@ -69,6 +69,42 @@ body[data-theme="light"] {
   filter: invert(1) brightness(200%);
 }
 
+.dropdown-list {
+  position: absolute;
+  width: 100%;
+  z-index: 10;
+  background-color: white;
+  max-height: 150px;
+  overflow-y: auto;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  padding: 0;
+}
+
+.mt-6 {
+  margin-top: 5rem !important;
+}
+
+.question-container {
+  position: relative; /* Ensure child elements position relative to this */
+  padding-bottom: 50px; /* Prevent overlap with the button */
+}
+
+.next-button {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+
+
   
   
   
