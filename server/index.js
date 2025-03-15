@@ -55,7 +55,12 @@ app.put("/updatePerson/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid content ID" });
     }
 
-    if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !userType?.trim()) {
+    if (
+      !firstname?.trim() ||
+      !lastname?.trim() ||
+      !email?.trim() ||
+      !userType?.trim()
+    ) {
       return res
         .status(400)
         .json({ message: "Title and Description are required" });
@@ -205,7 +210,11 @@ app.post("/createQuestionByContent", async (req, res) => {
 
 app.get("/getQuestions/all", async (req, res) => {
   try {
-    const questions = await QuestionModel.find().populate("contentId", "title");
+    const questions = await QuestionModel.find().populate(
+      "contentId",
+      "title description link category"
+    );
+
     res.status(200).json(questions);
   } catch (error) {
     console.error("Error fetching questions:", error);
@@ -315,7 +324,7 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
 
 app.post("/saveAnswerByQuestion", async (req, res) => {
   try {
-    const { studentId, contentId, questionId, selectedAnswers } = req.body;
+    const { studentId, contentId, questionId, selectedAnswers, isCorrect, isPartiallyCorrect } = req.body;
 
     if (!studentId || !contentId || !questionId || !selectedAnswers) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -326,6 +335,8 @@ app.post("/saveAnswerByQuestion", async (req, res) => {
       contentId,
       questionId,
       selectedAnswers,
+      isCorrect,
+      isPartiallyCorrect,
       dateSubmitted: new Date(),
     });
 

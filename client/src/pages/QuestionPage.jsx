@@ -152,10 +152,10 @@ function QuestionPage() {
 
     if (selectedRow[title] !== rowIndex) {
       e.preventDefault();
-      Swal.fire({
-        icon: "warning",
-        title: "Warning",
-        text: "Select this record first.",
+      toast.warning("Select this record first.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
       });
     } else {
       setActiveDropdown((prev) => (prev === uniqueRow ? null : uniqueRow));
@@ -186,139 +186,148 @@ function QuestionPage() {
         {/* /.card-header */}
         <div className="card-body">
           {/* Search Bar and Add New Button in One Row */}
-          <div className="mb-3 d-flex align-items-center justify-content-between">
-            {/* Add New Button */}
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleAddNew}
-            >
-              Add New
-            </button>
+          <div className="mb-3 row g-2 align-items-center">
+            {/* Add New Button (col-1 on desktop, full-width on mobile) */}
+            <div className="col-12 col-md-1">
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                onClick={handleAddNew}
+              >
+                Add New
+              </button>
+            </div>
 
-            {/* Search Bar */}
-            <div className="d-flex align-items-center">
-              <label className="me-2 mt-1">Search:</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by title..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search Bar (remaining width) */}
+            <div className="col-12 col-md-4 ms-md-auto">
+              <div className="d-flex align-items-center">
+                <label className="me-2">Search:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by title..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <table className="table table-bordered">
-            <thead className={theme === "dark" ? "table-dark" : "table-light"}>
-              <tr>
-                <th>Title</th>
-                <th>Question</th>
-                <th>Answer A</th>
-                <th>Answer B</th>
-                <th>Answer C</th>
-                <th>Answer D</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedTitles.length > 0 ? (
-                paginatedTitles.map((title) => (
-                  <React.Fragment key={title}>
-                    <tr className="table-info">
-                      <td colSpan="7">
-                        <button
-                          onClick={() => toggleExpand(title)}
-                          className="text-lg font-bold me-4"
-                        >
-                          <FontAwesomeIcon
-                            icon={expandedTitles[title] ? faMinus : faPlus}
-                          />
-                        </button>
-                        <strong>{title.toUpperCase()}</strong>
-                      </td>
-                    </tr>
-
-                    {expandedTitles[title] &&
-                      groupedQuestions[title].map((q, rowIndex) => (
-                        // <tr key={q._id}>
-                        <tr
-                          key={rowIndex}
-                          className={
-                            selectedRow[title] === rowIndex
-                              ? "table-primary"
-                              : ""
-                          }
-                          onClick={(event) =>
-                            handleRowClick(title, rowIndex, event, q)
-                          }
-                          style={{ cursor: "pointer" }}
-                        >
-                          <td className="text-center">{rowIndex + 1}</td>
-                          <td>{q.question}</td>
-                          <td>{q.answerA}</td>
-                          <td>{q.answerB}</td>
-                          <td>{q.answerC}</td>
-                          <td>{q.answerD}</td>
-                          <td className="text-center">
-                            <div className="dropdown">
-                              <button
-                                className={`btn btn-primary btn-sm ${
-                                  activeDropdown === `${title}-${rowIndex}`
-                                    ? "show"
-                                    : ""
-                                }`}
-                                type="button"
-                                onClick={(e) =>
-                                  handleClickBurger(e, title, rowIndex)
-                                }
-                              >
-                                ☰
-                              </button>
-                              <ul
-                                className={`dropdown-menu ${
-                                  activeDropdown === `${title}-${rowIndex}`
-                                    ? "show"
-                                    : ""
-                                }`}
-                              >
-                                <li>
-                                  <button
-                                    className="dropdown-item"
-                                    onClick={() => handleUpdate(q, rowIndex)}
-                                  >
-                                    <i className="fa fa-edit me-2"></i>Update
-                                  </button>
-                                </li>
-                                <li>
-                                  <button
-                                    className="dropdown-item text-danger"
-                                    onClick={() =>
-                                      handleDelete(q._id, rowIndex)
-                                    }
-                                  >
-                                    <i className="fa fa-trash me-2"></i>Delete
-                                  </button>
-                                </li>
-                              </ul>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </React.Fragment>
-                ))
-              ) : (
+          <div className="table-responsive">
+            <table className="table table-bordered">
+              <thead
+                className={theme === "dark" ? "table-dark" : "table-light"}
+              >
                 <tr>
-                  <td colSpan="6" className="text-center">
-                    No questions available
-                  </td>
+                  <th>Title</th>
+                  <th>Question</th>
+                  <th>Answer A</th>
+                  <th>Answer B</th>
+                  <th>Answer C</th>
+                  <th>Answer D</th>
+                  <th>Action</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedTitles.length > 0 ? (
+                  paginatedTitles.map((title) => (
+                    <React.Fragment key={title}>
+                      <tr className="table-info">
+                        <td colSpan="7">
+                          <button
+                            onClick={() => toggleExpand(title)}
+                            className="text-lg font-bold me-4"
+                          >
+                            <FontAwesomeIcon
+                              icon={expandedTitles[title] ? faMinus : faPlus}
+                            />
+                          </button>
+                          <strong>{title.toUpperCase()}</strong>
+                        </td>
+                      </tr>
 
-          <div className="d-flex justify-content-between align-items-center mb-3 mt-3">
-            <div className="d-flex align-items-center">
+                      {expandedTitles[title] &&
+                        groupedQuestions[title].map((q, rowIndex) => (
+                          // <tr key={q._id}>
+                          <tr
+                            key={rowIndex}
+                            className={
+                              selectedRow[title] === rowIndex
+                                ? "table-primary cursor-pointer"
+                                : "cursor-pointer"
+                            }
+                            onClick={(event) =>
+                              handleRowClick(title, rowIndex, event, q)
+                            }
+                          >
+                            <td className="text-center">{rowIndex + 1}</td>
+                            <td>{q.question}</td>
+                            <td>{q.answerA}</td>
+                            <td>{q.answerB}</td>
+                            <td>{q.answerC}</td>
+                            <td>{q.answerD}</td>
+                            <td className="text-center">
+                              <div className="dropdown">
+                                <button
+                                  className={`btn btn-primary btn-sm ${
+                                    activeDropdown === `${title}-${rowIndex}`
+                                      ? "show"
+                                      : ""
+                                  }`}
+                                  type="button"
+                                  onClick={(e) =>
+                                    handleClickBurger(e, title, rowIndex)
+                                  }
+                                >
+                                  ☰
+                                </button>
+                                <ul
+                                  className={`dropdown-menu ${
+                                    activeDropdown === `${title}-${rowIndex}`
+                                      ? "show"
+                                      : ""
+                                  }`}
+                                >
+                                  <li>
+                                    <button
+                                      className="dropdown-item"
+                                      onClick={() => handleUpdate(q, rowIndex)}
+                                    >
+                                      <i className="fa fa-edit me-2"></i>Update
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button
+                                      className="dropdown-item text-danger"
+                                      onClick={() =>
+                                        handleDelete(q._id, rowIndex)
+                                      }
+                                    >
+                                      <i className="fa fa-trash me-2"></i>Delete
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center">
+                      No questions available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls & Items Per Page in One Row */}
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3">
+            {/* Items Per Page Dropdown */}
+            <div className="d-flex align-items-center mb-2 mb-md-0">
               <label className="me-2">Show:</label>
               <select
                 className="form-select w-auto"
@@ -328,11 +337,16 @@ function QuestionPage() {
                   setCurrentPage(1);
                 }}
               >
-                {[5, 10, 15, 20, 100].map((size) => (
+                {/* {[5, 10, 15, 20, 100].map((size) => (
                   <option key={size} value={size}>
                     {size}
                   </option>
-                ))}
+                ))} */}
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="All">All</option>
               </select>
               <label className="ms-2">
                 {" "}
@@ -340,8 +354,8 @@ function QuestionPage() {
                 {paginatedTitles.length > 1 ? "entries" : "entry"}
               </label>
             </div>
-            <nav>
-              <ul className="pagination mb-0">
+            <nav className="d-flex justify-content-center">
+              <ul className="pagination mb-0 flex-wrap">
                 <li
                   className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
                 >

@@ -2,8 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 
-function NavBar() {
+function NavBar({ studentData }) {
   const { theme, toggleTheme } = useTheme();
+  console.log("NavBar: ", studentData);
+
   return (
     <div>
       <nav className="navbar navbar-expand-lg bg-dark navbar-dark fixed-top">
@@ -22,34 +24,54 @@ function NavBar() {
           </button>
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav me-auto">
-              <li className="nav-item">
-                <Link className="nav-link" to="/exercises">
-                  | Exercises
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/result">
-                  | Result
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/account">
-                  | Student
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/content">
-                  | Content
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/question">
-                  | Question
-                </Link>
-              </li>
+              {studentData?.userType === "student" ? (
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/exercises">
+                      | Exercises
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/result">
+                      | Result
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/result">
+                      | Result
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/account">
+                      | Student
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/content">
+                      | Content
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/question">
+                      | Question
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
-            {/* Right-aligned Logout Link */}
+
+            {/* Right-aligned User Info and Logout */}
             <ul className="navbar-nav">
+              {studentData && (
+                <li className="nav-item">
+                  <label className="nav-link text-white">
+                    {studentData.email}
+                  </label>
+                </li>
+              )}
               <li className="nav-item">
                 <Link className="nav-link text-white" to="/">
                   Logout

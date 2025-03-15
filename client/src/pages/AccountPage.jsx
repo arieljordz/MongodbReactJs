@@ -11,7 +11,7 @@ function AccountPage() {
   const location = useLocation();
   const userData = location.state || {};
   const { theme } = useTheme();
-  const [contents, setStudents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [mode, setMode] = useState("ADD");
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,12 +29,12 @@ function AccountPage() {
       const response = await axios.get("http://localhost:3001/getPersons/all");
       setStudents(response.data);
     } catch (error) {
-      console.error("Error fetching contents:", error);
+      console.error("Error fetching students:", error);
     }
   };
 
   // Filtering data based on search term
-  const filteredData = contents.filter((item) =>
+  const filteredData = students.filter((item) =>
     item.lastname.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -148,14 +148,14 @@ function AccountPage() {
 
     if (selectedRow !== rowIndex) {
       e.preventDefault();
-      Swal.fire({
-        icon: "warning",
-        title: "Warning",
-        text: "Select this record first.",
+      toast.warning("Select this record first.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
       });
-    } else {
-      setActiveDropdown((prev) => (prev === rowIndex ? null : rowIndex));
+      return;
     }
+    setActiveDropdown((prev) => (prev === rowIndex ? null : rowIndex));
   };
 
   useEffect(() => {
@@ -186,148 +186,155 @@ function AccountPage() {
         {/* /.card-header */}
         <div className="card-body">
           {/* Search Bar and Add New Button in One Row */}
-          <div className="mb-3 d-flex align-items-center justify-content-between">
-            {/* Add New Button */}
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleAddNew}
-            >
-              Add New
-            </button>
+          <div className="mb-3 row g-2 align-items-center">
+            {/* Add New Button (col-1 on desktop, full-width on mobile) */}
+            <div className="col-12 col-md-1">
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                onClick={handleAddNew}
+              >
+                Add New
+              </button>
+            </div>
 
-            {/* Search Bar */}
-            <div className="d-flex align-items-center">
-              <label className="me-2 mt-1">Search:</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by title..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search Bar (remaining width) */}
+            <div className="col-12 col-md-4 ms-md-auto">
+              <div className="d-flex align-items-center">
+                <label className="me-2">Search:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           {/* Table */}
-          <table className="table table-striped table-bordered">
-            <thead className={theme === "dark" ? "table-dark" : "table-light"}>
-              <tr>
-                <th>Count</th>
-                <th
-                  onClick={() => handleSort("firstname")}
-                  style={{ cursor: "pointer" }}
-                >
-                  First Name{" "}
-                  {sortConfig.key === "firstname"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Middle Name</th>
-                <th
-                  onClick={() => handleSort("lastname")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Last Name{" "}
-                  {sortConfig.key === "lastname"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th
-                  onClick={() => handleSort("email")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Email{" "}
-                  {sortConfig.key === "email"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th
-                  onClick={() => handleSort("userType")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Role{" "}
-                  {sortConfig.key === "userType"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayItems.length > 0 ? (
-                displayItems.map((item, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className={selectedRow === rowIndex ? "table-primary" : ""}
-                    onClick={(event) => handleRowClick(rowIndex, event, item)}
-                    style={{ cursor: "pointer" }}
+          <div className="table-responsive">
+            <table className="table table-striped table-bordered">
+              <thead
+                className={theme === "dark" ? "table-dark" : "table-light"}
+              >
+                <tr>
+                  <th>Count</th>
+                  <th
+                    onClick={() => handleSort("firstname")}
+                    className="cursor-pointer"
                   >
-                    <td className="text-center">{rowIndex + 1}</td>
-                    <td>{item.firstname}</td>
-                    <td>{item.middlename}</td>
-                    <td>{item.lastname}</td>
-                    <td>{item.email}</td>
-                    <td>{item.userType}</td>
-                    <td className="text-center">
-                      <div className="dropdown">
-                        <button
-                          className={`btn btn-primary btn-sm`}
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          aria-expanded={activeDropdown === rowIndex}
-                          onClick={(e) => handleClickBurger(e, rowIndex)}
-                        >
-                          ☰
-                        </button>
-                        <ul
-                          className={`dropdown-menu ${
-                            activeDropdown === rowIndex ? "show" : ""
-                          }`}
-                        >
-                          <li>
-                            <button
-                              className="dropdown-item"
-                              onClick={() => handleUpdate(item, rowIndex)}
-                            >
-                              <i className="fa fa-edit me-2"></i>Update
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              className="dropdown-item text-danger"
-                              onClick={() => handleDelete(item._id, rowIndex)}
-                            >
-                              <i className="fa fa-trash me-2"></i>Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                    First Name{" "}
+                    {sortConfig.key === "firstname"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th>Middle Name</th>
+                  <th
+                    onClick={() => handleSort("lastname")}
+                    className="cursor-pointer"
+                  >
+                    Last Name{" "}
+                    {sortConfig.key === "lastname"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th
+                    onClick={() => handleSort("email")}
+                    className="cursor-pointer"
+                  >
+                    Email{" "}
+                    {sortConfig.key === "email"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th
+                    onClick={() => handleSort("userType")}
+                    className="cursor-pointer"
+                  >
+                    Role{" "}
+                    {sortConfig.key === "userType"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayItems.length > 0 ? (
+                  displayItems.map((item, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      className={
+                        selectedRow === rowIndex ? "table-primary cursor-pointer" : "cursor-pointer"
+                      }
+                      onClick={(event) => handleRowClick(rowIndex, event, item)}
+                    >
+                      <td className="text-center">{rowIndex + 1}</td>
+                      <td>{item.firstname}</td>
+                      <td>{item.middlename}</td>
+                      <td>{item.lastname}</td>
+                      <td>{item.email}</td>
+                      <td>{item.userType}</td>
+                      <td className="text-center">
+                        <div className="dropdown">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            type="button"
+                            aria-expanded={activeDropdown === rowIndex}
+                            onClick={(e) => handleClickBurger(e, rowIndex)}
+                          >
+                            ☰
+                          </button>
+                          <ul
+                            className={`dropdown-menu ${
+                              activeDropdown === rowIndex ? "show" : ""
+                            }`}
+                          >
+                            <li>
+                              <button
+                                className="dropdown-item"
+                                onClick={() => handleUpdate(item, rowIndex)}
+                              >
+                                <i className="fa fa-edit me-2"></i>Update
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                className="dropdown-item text-danger"
+                                onClick={() => handleDelete(item._id, rowIndex)}
+                              >
+                                <i className="fa fa-trash me-2"></i>Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center">
+                      No students available
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center">
-                    No contents available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
+                )}
+              </tbody>
+            </table>
+          </div>
           {/* Pagination Controls & Items Per Page in One Row */}
-          <div className="d-flex justify-content-between align-items-center mb-3 mt-3">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3">
             {/* Items Per Page Dropdown */}
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center mb-2 mb-md-0">
               <label className="me-2">Show:</label>
               <select
                 className="form-select w-auto"
@@ -349,15 +356,15 @@ function AccountPage() {
               </select>
               <label className="ms-2">
                 {" "}
-                {displayItems.length > 1 ? "rows" : "row"} of {contents.length}{" "}
+                {displayItems.length > 1 ? "rows" : "row"} of {students.length}{" "}
                 {displayItems.length > 1 ? "entries" : "entry"}
               </label>
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && itemsPerPage !== "All" && (
-              <nav>
-                <ul className="pagination mb-0">
+              <nav className="d-flex justify-content-center">
+                <ul className="pagination mb-0 flex-wrap">
                   <li
                     className={`page-item ${
                       currentPage === 1 ? "disabled" : ""

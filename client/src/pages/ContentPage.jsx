@@ -148,14 +148,14 @@ function ContentPage() {
 
     if (selectedRow !== rowIndex) {
       e.preventDefault();
-      Swal.fire({
-        icon: "warning",
-        title: "Warning",
-        text: "Select this record first.",
+      toast.warning("Select this record first.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
       });
-    } else {
-      setActiveDropdown((prev) => (prev === rowIndex ? null : rowIndex));
+      return;
     }
+    setActiveDropdown((prev) => (prev === rowIndex ? null : rowIndex));
   };
 
   useEffect(() => {
@@ -189,136 +189,143 @@ function ContentPage() {
         {/* /.card-header */}
         <div className="card-body">
           {/* Search Bar and Add New Button in One Row */}
-          <div className="mb-3 d-flex align-items-center justify-content-between">
-            {/* Add New Button */}
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleAddNew}
-            >
-              Add New
-            </button>
+          <div className="mb-3 row g-2 align-items-center">
+            {/* Add New Button (col-1 on desktop, full-width on mobile) */}
+            <div className="col-12 col-md-1">
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                onClick={handleAddNew}
+              >
+                Add New
+              </button>
+            </div>
 
-            {/* Search Bar */}
-            <div className="d-flex align-items-center">
-              <label className="me-2 mt-1">Search:</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by title..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search Bar (remaining width) */}
+            <div className="col-12 col-md-4 ms-md-auto">
+              <div className="d-flex align-items-center">
+                <label className="me-2">Search:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by title..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           {/* Table */}
-          <table className="table table-striped table-bordered">
-            <thead className={theme === "dark" ? "table-dark" : "table-light"}>
-              <tr>
-                <th>Count</th>
-                <th
-                  onClick={() => handleSort("title")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Title{" "}
-                  {sortConfig.key === "title"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Description</th>
-                <th
-                  onClick={() => handleSort("link")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Link{" "}
-                  {sortConfig.key === "link"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th
-                  onClick={() => handleSort("category")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Category{" "}
-                  {sortConfig.key === "category"
-                    ? sortConfig.direction === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
-                </th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayItems.length > 0 ? (
-                displayItems.map((item, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className={selectedRow === rowIndex ? "table-primary" : ""}
-                    onClick={(event) => handleRowClick(rowIndex, event, item)}
-                    style={{ cursor: "pointer" }}
+          <div className="table-responsive">
+            <table className="table table-striped table-bordered">
+              <thead
+                className={theme === "dark" ? "table-dark" : "table-light"}
+              >
+                <tr>
+                  <th>Count</th>
+                  <th
+                    onClick={() => handleSort("title")}
+                    className="cursor-pointer"
                   >
-                    <td className="text-center">{rowIndex + 1}</td>
-                    <td>{item.title}</td>
-                    <td>{item.description}</td>
-                    <td>{item.link}</td>
-                    <td>{item.category}</td>
-                    <td className="text-center">
-                      <div className="dropdown">
-                        <button
-                          className={`btn btn-primary btn-sm`}
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          aria-expanded={activeDropdown === rowIndex}
-                          onClick={(e) => handleClickBurger(e, rowIndex)}
-                        >
-                          ☰
-                        </button>
-                        <ul
-                          className={`dropdown-menu ${
-                            activeDropdown === rowIndex ? "show" : ""
-                          }`}
-                        >
-                          <li>
-                            <button
-                              className="dropdown-item"
-                              onClick={() => handleUpdate(item, rowIndex)}
-                            >
-                              <i className="fa fa-edit me-2"></i>Update
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              className="dropdown-item text-danger"
-                              onClick={() => handleDelete(item._id, rowIndex)}
-                            >
-                              <i className="fa fa-trash me-2"></i>Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                    Title{" "}
+                    {sortConfig.key === "title"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th>Description</th>
+                  <th
+                    onClick={() => handleSort("link")}
+                    className="cursor-pointer"
+                  >
+                    Link{" "}
+                    {sortConfig.key === "link"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th
+                    onClick={() => handleSort("category")}
+                    className="cursor-pointer"
+                  >
+                    Category{" "}
+                    {sortConfig.key === "category"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayItems.length > 0 ? (
+                  displayItems.map((item, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      className={
+                        selectedRow === rowIndex ? "table-primary cursor-pointer" : "cursor-pointer"
+                      }
+                      onClick={(event) => handleRowClick(rowIndex, event, item)}
+                    >
+                      <td className="text-center">{rowIndex + 1}</td>
+                      <td>{item.title}</td>
+                      <td>{item.description}</td>
+                      <td>{item.link}</td>
+                      <td>{item.category}</td>
+                      <td className="text-center">
+                        <div className="dropdown">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            type="button"
+                            aria-expanded={activeDropdown === rowIndex}
+                            onClick={(e) => handleClickBurger(e, rowIndex)}
+                          >
+                            ☰
+                          </button>
+                          <ul
+                            className={`dropdown-menu ${
+                              activeDropdown === rowIndex ? "show" : ""
+                            }`}
+                          >
+                            <li>
+                              <button
+                                className="dropdown-item"
+                                onClick={() => handleUpdate(item, rowIndex)}
+                              >
+                                <i className="fa fa-edit me-2"></i>Update
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                className="dropdown-item text-danger"
+                                onClick={() => handleDelete(item._id, rowIndex)}
+                              >
+                                <i className="fa fa-trash me-2"></i>Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center">
+                      No contents available
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center">
-                    No contents available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
+                )}
+              </tbody>
+            </table>
+          </div>
           {/* Pagination Controls & Items Per Page in One Row */}
-          <div className="d-flex justify-content-between align-items-center mb-3 mt-3">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3">
             {/* Items Per Page Dropdown */}
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center mb-2 mb-md-0">
               <label className="me-2">Show:</label>
               <select
                 className="form-select w-auto"
@@ -339,7 +346,6 @@ function ContentPage() {
                 <option value="All">All</option>
               </select>
               <label className="ms-2">
-                {" "}
                 {displayItems.length > 1 ? "rows" : "row"} of {contents.length}{" "}
                 {displayItems.length > 1 ? "entries" : "entry"}
               </label>
@@ -347,8 +353,8 @@ function ContentPage() {
 
             {/* Pagination */}
             {totalPages > 1 && itemsPerPage !== "All" && (
-              <nav>
-                <ul className="pagination mb-0">
+              <nav className="d-flex justify-content-center">
+                <ul className="pagination mb-0 flex-wrap">
                   <li
                     className={`page-item ${
                       currentPage === 1 ? "disabled" : ""

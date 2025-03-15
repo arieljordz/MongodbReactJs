@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useTheme } from "./ThemeContext"; 
+import { useTheme } from "./ThemeContext";
 import NavBar from "./NavBar";
 import LoginPage from "../pages/LoginPage";
 import ContentPage from "../pages/ContentPage";
@@ -13,13 +13,19 @@ import LoadingSpinner from "../customPages/LoadingSpinner";
 function Layout() {
   const location = useLocation();
   const { theme } = useTheme();
+  const [studentData, setStudentData] = useState(null);
+  console.log("Layout: ", studentData);
+
   return (
     <div className={theme}>
       {" "}
-      {location.pathname !== "/" && <NavBar />}
+      {location.pathname !== "/" && <NavBar studentData={studentData} />}
       <LoadingSpinner />
       <Routes>
-        <Route path="/" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={<LoginPage setStudentData={setStudentData} />}
+        />
         <Route path="/exercises" element={<ExercisesPage />} />
         <Route path="/result" element={<ResultPage />} />
         <Route path="/account" element={<AccountPage />} />

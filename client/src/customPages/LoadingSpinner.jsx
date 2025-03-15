@@ -7,7 +7,7 @@ const LoadingSpinner = () => {
 
   useEffect(() => {
     setLoading(true);
-    const timeout = setTimeout(() => setLoading(false), 500); // Simulated loading time
+    const timeout = setTimeout(() => setLoading(false), 500); 
     return () => clearTimeout(timeout);
   }, [location]);
 
