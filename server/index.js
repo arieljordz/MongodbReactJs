@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
+const { ObjectId } = require("mongodb");
 const PersonModel = require("./models/Person");
 const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
 const AnswerModel = require("./models/Answers");
+const ExercisesModel = require("./models/Exercises");
 
 const app = express();
 app.use(express.json());
@@ -222,6 +224,28 @@ app.get("/getQuestions/all", async (req, res) => {
   }
 });
 
+app.post("/getQuestionsBycontentIds", async (req, res) => {
+  try {
+    let { contentIds } = req.body; // These are actually contentIds
+
+    // Convert contentIds to ObjectId
+    const objectIds = contentIds.map(id => new mongoose.Types.ObjectId(id));
+
+    console.log("Received contentIds:", contentIds);
+    console.log("Converted ObjectIds:", objectIds);
+
+    // Query using contentId instead of _id and populate content details
+    const questions = await QuestionModel.find({ contentId: { $in: objectIds } })
+      .populate("contentId"); // This assumes contentId is a reference to another collection
+
+    console.log("Fetched Questions with Content Details:", questions);
+    res.json(questions);
+  } catch (error) {
+    console.error("Error fetching questions by content IDs:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 app.put("/updateQuestion/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -351,6 +375,58 @@ app.post("/saveAnswerByQuestion", async (req, res) => {
       .json({ message: "Error creating answer", error: error.message });
   }
 });
+
+app.post("/createExercises", async (req, res) => {
+  try {
+    const obj = await ExercisesModel.create(req.body);
+    res.status(201).json(obj);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating exercises", error: error.message });
+  }
+});
+
+app.get("/getExercises/all", async (req, res) => {
+  try {
+    const obj = await ExercisesModel.find();
+    res.status(200).json(obj);
+  } catch (error) {
+    console.error("Error fetching exercises sequence:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.put("/updateOrCreateExercise/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sequence, titles, dateStarted } = req.body;
+
+    // Validate if ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    // Use `findByIdAndUpdate` with `upsert: true`
+    const exercise = await ExercisesModel.findByIdAndUpdate(
+      id,
+      { sequence, titles, dateStarted },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json(exercise);
+  } catch (error) {
+    console.error("Error updating or inserting exercise:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
+
+
+
+
+
 
 // Start Server
 const PORT = process.env.PORT || 3001;

@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 function GoogleLoginButton({ userDetails, navigate, setStudentData }) {
   const [students, setStudents] = useState([]);
-  console.log("GoogleLoginButton: ", setStudentData);
+  // console.log("GoogleLoginButton: ", setStudentData);
 
   // Fetch students data
   const fetchStudents = async () => {
@@ -59,7 +59,7 @@ function GoogleLoginButton({ userDetails, navigate, setStudentData }) {
 
     // Redirect based on userType
     navigate(
-      validatedStudent.userType === "student" ? "/exercises" : "/result",
+      validatedStudent.userType === "student" ? "/home" : "/results",
       { state: validatedStudent }
     );
   };

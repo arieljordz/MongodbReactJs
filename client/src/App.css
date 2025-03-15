@@ -86,8 +86,9 @@ body[data-theme="light"] {
 }
 
 .cursor-pointer {
-  cursor: pointer;
+  cursor: pointer !important;
 }
+
 
 
 

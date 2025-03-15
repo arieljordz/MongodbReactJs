@@ -4,12 +4,10 @@ import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { useLocation } from "react-router-dom";
 import { useTheme } from "../customPages/ThemeContext";
 
 function AccountPage() {
-  const location = useLocation();
-  const userData = location.state || {};
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -22,7 +20,7 @@ function AccountPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  console.log("Student User Data:", userData);
+  console.log("Student User Data:", studentData);
   // Function to Fetch Students
   const fetchStudents = async () => {
     try {
@@ -169,10 +167,10 @@ function AccountPage() {
           <nav aria-label="breadcrumb mt-5">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="">Home</a>
+                <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Student</a>
+                <a children="text-blue">Student</a>
               </li>
             </ol>
           </nav>

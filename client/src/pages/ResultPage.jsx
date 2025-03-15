@@ -3,17 +3,18 @@ import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
-import CreateQuestionModal from "../modals/QuestionModal";
 import { useTheme } from "../customPages/ThemeContext";
 
 function ResultPage() {
-  const [contents, setContents] = useState([]);
-  const [questions, setQuestions] = useState([]);
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
-  const [mode, setMode] = useState("ADD");
-  const [showModal, setShowModal] = useState(false);
+  const results = [
+    { title: "Math Quiz", score: 85 },
+    { title: "Science Test", score: 70 },
+    { title: "History Exam", score: 92 },
+  ];
+
+  console.log("ResultPage: ", studentData);
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -22,10 +23,10 @@ function ResultPage() {
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="">Home</a>
+                <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Result</a>
+                <a children="text-blue">Result</a>
               </li>
             </ol>
           </nav>
@@ -37,7 +38,40 @@ function ResultPage() {
           <h3 className="card-title">Results</h3>
         </div>
         {/* /.card-header */}
-        <div className="card-body">body</div>
+        <div className="card-body">
+          {results.length > 0 ? (
+            <table className="table table-bordered table-hover">
+              <thead className="thead-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Title</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((result, index) => (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{result.title}</td>
+                    <td>{result.score}%</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          result.score >= 75 ? "bg-success" : "bg-danger"
+                        }`}
+                      >
+                        {result.score >= 75 ? "Passed" : "Failed"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center text-muted">No results available.</div>
+          )}
+        </div>
       </div>
     </div>
   );

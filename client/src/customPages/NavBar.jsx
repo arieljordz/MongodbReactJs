@@ -1,10 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import Settings from "./Settings";
 
 function NavBar({ studentData }) {
   const { theme, toggleTheme } = useTheme();
-  console.log("NavBar: ", studentData);
+  // console.log("NavBar: ", studentData);
+
+  const handleLogout = () => {
+    console.log("User logged out! Implement logout logic here.");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
 
   return (
     <div>
@@ -26,6 +33,11 @@ function NavBar({ studentData }) {
             <ul className="navbar-nav me-auto">
               {studentData?.userType === "student" ? (
                 <>
+                  {/* <li className="nav-item">
+                    <Link className="nav-link" to="/home">
+                      | Home
+                    </Link>
+                  </li>
                   <li className="nav-item">
                     <Link className="nav-link" to="/exercises">
                       | Exercises
@@ -35,7 +47,7 @@ function NavBar({ studentData }) {
                     <Link className="nav-link" to="/result">
                       | Result
                     </Link>
-                  </li>
+                  </li> */}
                 </>
               ) : (
                 <>
@@ -65,7 +77,7 @@ function NavBar({ studentData }) {
 
             {/* Right-aligned User Info and Logout */}
             <ul className="navbar-nav">
-              {studentData && (
+              {/* {studentData && (
                 <li className="nav-item">
                   <label className="nav-link text-white">
                     {studentData.email}
@@ -82,7 +94,12 @@ function NavBar({ studentData }) {
                 onClick={toggleTheme}
               >
                 {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
-              </button>
+              </button> */}
+              <Settings
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onLogout={handleLogout}
+              />
             </ul>
           </div>
         </div>

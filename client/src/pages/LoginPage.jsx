@@ -8,7 +8,7 @@ function LoginPage({ setStudentData }) {
   const navigate = useNavigate();
   const [userDetails, setUserDetails] = useState({ userType: "student" });
 
-  console.log("Login: ", setStudentData);
+  // console.log("Login: ", setStudentData);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserDetails((prevDetails) => ({

@@ -8,8 +8,7 @@ import { useLocation } from "react-router-dom";
 import { useTheme } from "../customPages/ThemeContext";
 
 function ContentPage() {
-  const location = useLocation();
-  const userData = location.state || {};
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const [contents, setContents] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
@@ -22,7 +21,7 @@ function ContentPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  console.log("Content User Data:", userData);
+  console.log("Content User Data:", studentData);
   // Function to Fetch Contents
   const fetchContents = async () => {
     try {
@@ -169,10 +168,10 @@ function ContentPage() {
           <nav aria-label="breadcrumb mt-5">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="">Home</a>
+                <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Content</a>
+                <a children="text-blue">Content</a>
               </li>
               {/* <li className="breadcrumb-item active" aria-current="page">
                 Content

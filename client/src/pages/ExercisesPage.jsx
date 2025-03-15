@@ -1,164 +1,96 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import { useLocation } from "react-router-dom";
 import { useTheme } from "../customPages/ThemeContext";
+import Timer from "../customPages/Timer";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function ExercisesPage() {
-  const location = useLocation();
-  const studentData = location.state || {};
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
-  const [questionsByTitle, setQuestionsByTitle] = useState({});
+  const navigate = useNavigate();
+
   const [titles, setTitles] = useState([]);
+  const [questionsByTitle, setQuestionsByTitle] = useState({});
   const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [remainingQuestions, setRemainingQuestions] = useState([]);
+  const totalTime = 10 * 60;
+  const [timeLeft, setTimeLeft] = useState(totalTime);
 
   useEffect(() => {
-    fetchQuestions();
+    fetchExercises();
   }, []);
 
-  console.log("ExercisesPage: ", studentData);
-  const fetchQuestions = async () => {
+  const handleTimeUp = () => {
+    toast.error("Time is up! Submitting automatically.", { autoClose: 2000 });
+    navigate("/congrats");
+  };
+
+  const fetchExercises = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:3001/getQuestions/all"
+        "http://localhost:3001/getExercises/all"
       );
-      // console.log("response: ", response.data);
-      const grouped = groupByTitle(response.data);
-      setQuestionsByTitle(grouped);
+      const exerciseData = response.data[0];
+      if (!exerciseData) return;
 
-      const titleKeys = Object.keys(grouped);
-      setTitles(titleKeys);
+      const sequenceIds = exerciseData.sequence.split(",");
+      const titlesArray = exerciseData.titles.split(",");
+      setTitles(titlesArray);
+      fetchQuestionsByIds(sequenceIds);
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+    }
+  };
 
-      if (titleKeys.length > 0) {
-        setCurrentTitleIndex(0);
-        setRandomQuestion(grouped[titleKeys[0]]);
+  const fetchQuestionsByIds = async (sequenceIds) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/getQuestionsBycontentIds",
+        { contentIds: sequenceIds }
+      );
+
+      console.log("Raw API Response:", response.data); // Debugging log
+
+      if (!Array.isArray(response.data) || response.data.length === 0) {
+        console.error("No questions found or response is not an array.");
+        return;
       }
+
+      const groupedQuestions = response.data.reduce((acc, question) => {
+        if (!question.contentId || !question.contentId.title) {
+          console.warn("Skipping question due to missing title:", question);
+          return acc;
+        }
+
+        const title = question.contentId.title;
+        if (!acc[title]) {
+          acc[title] = {
+            description: question.contentId.description || "",
+            link: question.contentId.link ? question.contentId.link.trim() : "",
+            category: question.contentId.category || "Uncategorized",
+            questions: [],
+          };
+        }
+
+        acc[title].questions.push(question);
+        return acc;
+      }, {});
+
+      console.log("Grouped Questions by Title:", groupedQuestions);
+      setQuestionsByTitle(groupedQuestions);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
   };
 
-  const groupByTitle = (questions) => {
-    return questions.reduce((acc, question) => {
-      const title = question.contentId.title;
-      acc[title] = acc[title] || [];
-      acc[title].push(question);
-      return acc;
-    }, {});
-  };
-
-  const setRandomQuestion = (questions) => {
-    if (questions.length > 0) {
-      const shuffled = [...questions].sort(() => Math.random() - 0.5);
-      setRemainingQuestions(shuffled);
-      setCurrentQuestion(shuffled[0]);
-    }
-  };
-
-  const handleSubmitAnswer = async () => {
-    if (!currentQuestion) return;
-
-    const selected = selectedAnswers[currentQuestion._id] || {};
-    const hasSelectedAnswer = Object.values(selected).some((value) => value);
-
-    if (!hasSelectedAnswer) {
-      toast.warning("Please select at least one answer before submitting.", {
-        autoClose: 2000,
-        position: "top-right",
-        closeButton: true,
-      });
-      return;
-    }
-
-    // Get correct answers from the current question
-    const correctAnswers = {
-      answerA: currentQuestion.answerACheck,
-      answerB: currentQuestion.answerBCheck,
-      answerC: currentQuestion.answerCCheck,
-      answerD: currentQuestion.answerDCheck,
-    };
-
-    const selectedKeys = Object.keys(selected).filter((key) => selected[key]); // Selected answer keys
-    const correctKeys = Object.keys(correctAnswers).filter(
-      (key) => correctAnswers[key]
-    ); // Correct answer keys
-
-    const isFullyCorrect =
-      selectedKeys.length === correctKeys.length &&
-      selectedKeys.every((key) => correctKeys.includes(key));
-    const isPartiallyCorrect =
-      selectedKeys.some((key) => correctKeys.includes(key)) && !isFullyCorrect;
-
-    let resultMessage = "";
-    if (isFullyCorrect) {
-      resultMessage = "Correct Answer! 🎉";
-    } else if (isPartiallyCorrect) {
-      resultMessage = "Partially Correct Answer! ⚠️";
-    } else {
-      resultMessage = "Incorrect Answer! ❌";
-    }
-
-    const answerPayload = {
-      studentId: studentData._id,
-      contentId: currentQuestion.contentId._id,
-      questionId: currentQuestion._id,
-      selectedAnswers: selected,
-      isCorrect: isFullyCorrect,
-      isPartiallyCorrect: isPartiallyCorrect,
-    };
-
-    console.log("answerPayload: ", answerPayload);
-
-    try {
-      await axios.post(
-        "http://localhost:3001/saveAnswerByQuestion",
-        answerPayload
-      );
-
-      if (isFullyCorrect) {
-        toast.success(resultMessage, {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
-      } else if (isPartiallyCorrect) {
-        toast.info(resultMessage, {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
-      } else {
-        toast.error(resultMessage, {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
-      }
-
-      // Move to the next question
-      if (remainingQuestions.length > 1) {
-        const nextQuestions = remainingQuestions.slice(1);
-        setRemainingQuestions(nextQuestions);
-        setCurrentQuestion(nextQuestions[0]);
-      } else {
-        handleNextTopic();
-      }
-    } catch (error) {
-      console.error("Error saving answer:", error);
-    }
-  };
-
-  const handleNextTopic = () => {
-    if (currentTitleIndex < titles.length - 1) {
-      const nextIndex = currentTitleIndex + 1;
-      setCurrentTitleIndex(nextIndex);
-      setRandomQuestion(questionsByTitle[titles[nextIndex]]);
-      setSelectedAnswers({});
-    }
+  const getCurrentQuestion = () => {
+    const currentTitle = titles[currentTitleIndex];
+    return (
+      questionsByTitle[currentTitle]?.questions[currentQuestionIndex] || null
+    );
   };
 
   const handleCheckboxChange = (questionId, answerKey) => {
@@ -171,6 +103,88 @@ function ExercisesPage() {
     }));
   };
 
+  const handleSubmitAnswer = async () => {
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+
+    const selected = selectedAnswers[currentQuestion._id] || {};
+    const selectedKeys = Object.keys(selected).filter((key) => selected[key]);
+
+    if (selectedKeys.length === 0) {
+      toast.warning("⚠️ Please select at least one answer before proceeding!", {
+        autoClose: 2000,
+      });
+      return;
+    }
+
+    // Get correct answers from the question
+    const correctKeys = ["A", "B", "C", "D"].filter(
+      (key) => currentQuestion[`answer${key}Check`]
+    );
+
+    // Determine correctness levels
+    const correctSelections = selectedKeys.filter((key) =>
+      correctKeys.includes(key)
+    ).length;
+    const incorrectSelections = selectedKeys.filter(
+      (key) => !correctKeys.includes(key)
+    ).length;
+
+    let feedbackMessage = "";
+    let toastType = "";
+
+    if (correctSelections === correctKeys.length && incorrectSelections === 0) {
+      feedbackMessage = "✅ Correct answer!";
+      toastType = "success";
+    } else if (correctSelections > 0 && incorrectSelections === 0) {
+      feedbackMessage = "⚠️ Partially correct! Some answers are missing.";
+      toastType = "warning";
+    } else if (correctSelections > 0 && incorrectSelections > 0) {
+      feedbackMessage =
+        "⚠️ Partially correct! Some correct, but some are incorrect.";
+      toastType = "warning";
+    } else {
+      feedbackMessage = "❌ Wrong answer!";
+      toastType = "error";
+    }
+
+    toast[toastType](feedbackMessage, { autoClose: 1500 });
+
+    try {
+      await axios.post("http://localhost:3001/saveAnswerByQuestion", {
+        studentId: studentData._id,
+        contentId: currentQuestion.contentId,
+        questionId: currentQuestion._id,
+        selectedAnswers: selectedKeys,
+        isCorrect:
+          correctSelections === correctKeys.length && incorrectSelections === 0,
+        isPartiallyCorrect: correctSelections > 0 && incorrectSelections > 0,
+      });
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+    }
+
+    setTimeout(() => {
+      const currentTitle = titles[currentTitleIndex];
+      const questions = questionsByTitle[currentTitle]?.questions || [];
+
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else if (currentTitleIndex < titles.length - 1) {
+        setCurrentTitleIndex((prev) => prev + 1);
+        setCurrentQuestionIndex(0);
+      } else {
+        navigate("/congrats");
+      }
+
+      setSelectedAnswers({});
+    }, 1600);
+  };
+
+  const currentTitle = titles[currentTitleIndex];
+  const currentQuestion = getCurrentQuestion();
+  const contentDetail = questionsByTitle[currentTitle] || {};
+
   return (
     <div className={`container mt-6 ${theme}`}>
       <div className="content-header">
@@ -178,10 +192,10 @@ function ExercisesPage() {
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="">Home</a>
+                <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Exercises</a>
+                <a children="text-blue">Exercises</a>
               </li>
             </ol>
           </nav>
@@ -191,85 +205,80 @@ function ExercisesPage() {
       <div className={`card card-${theme}`}>
         <div className="card-header">
           <h3 className="card-title">Exercises</h3>
+          <Timer duration={timeLeft} onTimeUp={handleTimeUp} />
         </div>
-        {/* /.card-header */}
-        <div className="card-body">
-          {titles.length > 0 && (
-            <div className="mb-3">
-              <h4>Topic: {titles[currentTitleIndex]}</h4>
 
-              {/* Display Description, Link, and Category */}
-              {currentQuestion?.contentId && (
-                <div className="mt-2">
-                  <p>
-                    <strong>Description:</strong>{" "}
-                    {currentQuestion.contentId.description}
-                  </p>
-                  <p>
-                    <strong>Category:</strong>{" "}
-                    {currentQuestion.contentId.category}
-                  </p>
-                  {currentQuestion.contentId.link && (
-                    <p>
-                      <strong>Link:</strong>{" "}
-                      <a
-                        href={currentQuestion.contentId.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {currentQuestion.contentId.link}
-                      </a>
-                    </p>
-                  )}
+        <div className="card-body">
+          {currentTitle ? (
+            <h4>Topic: {currentTitle}</h4>
+          ) : (
+            <p>No title available.</p>
+          )}
+
+          {/* Display Content Details */}
+          {contentDetail.description && (
+            <div className="mb-3 p-3 border rounded bg-light">
+              <h5>Category: {contentDetail.category}</h5>
+              <p
+                className="text-justify"
+                style={{ textAlign: "justify", textIndent: "2em" }}
+                dangerouslySetInnerHTML={{ __html: contentDetail.description }}
+              ></p>
+
+              {contentDetail.link && (
+                <div
+                  className="mt-2 position-relative"
+                  style={{
+                    paddingBottom: "56.25%",
+                    height: 0,
+                    overflow: "hidden",
+                  }}
+                >
+                  <iframe
+                    className="position-absolute top-0 start-0 w-100 h-100"
+                    src={contentDetail.link}
+                    title="Video Content"
+                    frameBorder="0"
+                    allowFullScreen
+                  ></iframe>
                 </div>
               )}
             </div>
           )}
 
-          <div
-            className={`question-container border rounded p-3 ${
-              theme === "dark" ? "bg-dark text-white" : "bg-light"
-            }`}
-          >
-            {currentQuestion ? (
-              <div className="mb-3">
-                <h5>{currentQuestion.question}</h5>
-                {["A", "B", "C", "D"].map((key) => {
-                  const answerKey = `answer${key}`;
-                  return (
-                    <div key={answerKey} className="form-check mt-2">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        id={`${currentQuestion._id}-${answerKey}`}
-                        checked={
-                          selectedAnswers[currentQuestion._id]?.[answerKey] ||
-                          false
-                        }
-                        onChange={() =>
-                          handleCheckboxChange(currentQuestion._id, answerKey)
-                        }
-                      />
-                      <label
-                        className="form-check-label cursor-pointer"
-                        htmlFor={`${currentQuestion._id}-${answerKey}`}
-                      >
-                        {currentQuestion[answerKey]}
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p>Loading questions...</p>
-            )}
-            <button
-              className="btn btn-primary mt-3"
-              onClick={handleSubmitAnswer}
-            >
-              Submit Answer
-            </button>
-          </div>
+          {/* Display Question */}
+          {currentQuestion ? (
+            <div className="border rounded p-3">
+              <h5>{currentQuestion.question}</h5>
+              {["A", "B", "C", "D"].map((key) => (
+                <div key={key} className="form-check mt-2">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id={`${currentQuestion._id}-${key}`}
+                    checked={
+                      selectedAnswers[currentQuestion._id]?.[key] || false
+                    }
+                    onChange={() =>
+                      handleCheckboxChange(currentQuestion._id, key)
+                    }
+                  />
+                  <label
+                    className="cursor-pointer"
+                    htmlFor={`${currentQuestion._id}-${key}`}
+                  >
+                    {currentQuestion[`answer${key}`]}
+                  </label>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No question available.</p>
+          )}
+
+          <button className="btn btn-primary mt-3" onClick={handleSubmitAnswer}>
+            Submit Answer
+          </button>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import QuestionModal from "../modals/QuestionModal";
 import { useTheme } from "../customPages/ThemeContext";
 
 function QuestionPage() {
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const [contents, setContents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const { theme } = useTheme();
@@ -26,6 +27,8 @@ function QuestionPage() {
     fetchContents();
     fetchQuestions();
   }, []);
+
+  console.log("QuestionPage: ", studentData);
 
   const fetchContents = async () => {
     try {
@@ -169,10 +172,10 @@ function QuestionPage() {
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="">Home</a>
+                <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a href="">Question</a>
+                <a children="text-blue">Question</a>
               </li>
             </ol>
           </nav>
