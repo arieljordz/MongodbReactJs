@@ -41,7 +41,6 @@ function LoginPage({ setStudentData }) {
         {/* Google Login Button */}
         <GoogleLoginButton
           userDetails={userDetails}
-          navigate={navigate}
           setStudentData={setStudentData} 
         />
       </div>

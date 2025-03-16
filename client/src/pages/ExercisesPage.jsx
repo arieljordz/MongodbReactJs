@@ -6,7 +6,7 @@ import Timer from "../customPages/Timer";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
-function ExercisesPage() {
+function ExercisesPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -19,13 +19,33 @@ function ExercisesPage() {
   const totalTime = 10 * 60;
   const [timeLeft, setTimeLeft] = useState(totalTime);
 
+  // console.log("ExercisesPage: ", allowedPath);
+
+  // useEffect(() => {
+  //   fetchExercises();
+
+  //   // Restore progress from localStorage
+  //   const storedProgress =
+  //     JSON.parse(localStorage.getItem("exerciseProgress")) || {};
+  //   const userProgress = storedProgress[studentData._id];
+
+  //   console.log("1. userProgress:", userProgress);
+  //   if (userProgress) {
+  //     setCurrentTitleIndex(userProgress.currentTitleIndex);
+  //     setCurrentQuestionIndex(userProgress.currentQuestionIndex);
+  //   }
+  // }, []);
+
   useEffect(() => {
     fetchExercises();
+    const savedIndex = localStorage.getItem("currentQuestionIndex");
+    setCurrentQuestionIndex(savedIndex ? parseInt(savedIndex, 10) : 0);
   }, []);
 
+  
   const handleTimeUp = () => {
     toast.error("Time is up! Submitting automatically.", { autoClose: 2000 });
-    navigate("/congrats");
+    navigate("/student/congrats");
   };
 
   const fetchExercises = async () => {
@@ -52,7 +72,7 @@ function ExercisesPage() {
         { contentIds: sequenceIds }
       );
 
-      console.log("Raw API Response:", response.data); // Debugging log
+      // console.log("Raw API Response:", response.data); // Debugging log
 
       if (!Array.isArray(response.data) || response.data.length === 0) {
         console.error("No questions found or response is not an array.");
@@ -79,18 +99,39 @@ function ExercisesPage() {
         return acc;
       }, {});
 
-      console.log("Grouped Questions by Title:", groupedQuestions);
+      // console.log("Grouped Questions by Title:", groupedQuestions);
       setQuestionsByTitle(groupedQuestions);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
   };
 
+  // const getCurrentQuestion = () => {
+  //   const currentTitle = titles[currentTitleIndex];
+  //   return (
+  //     questionsByTitle[currentTitle]?.questions[currentQuestionIndex] || null
+  //   );
+  // };
+
   const getCurrentQuestion = () => {
     const currentTitle = titles[currentTitleIndex];
-    return (
-      questionsByTitle[currentTitle]?.questions[currentQuestionIndex] || null
+    const storedProgress =
+      JSON.parse(localStorage.getItem("exerciseProgress")) || {};
+      console.log("2. storedProgress:", storedProgress);
+
+    const answeredQuestions =
+      storedProgress[studentData._id]?.answeredQuestions || [];
+      console.log("3. answeredQuestions:", answeredQuestions);
+
+      console.log("4. questionsByTitle:", questionsByTitle[currentTitle]?.questions);
+
+    const remainingQuestions = questionsByTitle[currentTitle]?.questions.filter(
+      (q) => !answeredQuestions.includes(q._id)
     );
+    console.log("5. remainingQuestions:", remainingQuestions);
+    console.log("6. currentQuestionIndex:", currentQuestionIndex);
+    return remainingQuestions?.[currentQuestionIndex] || null;
+    // return remainingQuestions || null;
   };
 
   const handleCheckboxChange = (questionId, answerKey) => {
@@ -103,36 +144,48 @@ function ExercisesPage() {
     }));
   };
 
+  const updateExerciseStatus = async () => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/updateExerciseStatus/${studentData._id}`
+      );
+
+      // console.log("Exercise updated:", response.data);
+      navigate("/student/congrats");
+    } catch (error) {
+      console.error("Error updating exercise:", error);
+    }
+  };
+
   const handleSubmitAnswer = async () => {
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion) return;
-
+  
     const selected = selectedAnswers[currentQuestion._id] || {};
     const selectedKeys = Object.keys(selected).filter((key) => selected[key]);
-
+  
     if (selectedKeys.length === 0) {
       toast.warning("⚠️ Please select at least one answer before proceeding!", {
         autoClose: 2000,
       });
       return;
     }
-
-    // Get correct answers from the question
+  
+    // Get correct answers
     const correctKeys = ["A", "B", "C", "D"].filter(
       (key) => currentQuestion[`answer${key}Check`]
     );
-
-    // Determine correctness levels
+  
     const correctSelections = selectedKeys.filter((key) =>
       correctKeys.includes(key)
     ).length;
     const incorrectSelections = selectedKeys.filter(
       (key) => !correctKeys.includes(key)
     ).length;
-
+  
     let feedbackMessage = "";
     let toastType = "";
-
+  
     if (correctSelections === correctKeys.length && incorrectSelections === 0) {
       feedbackMessage = "✅ Correct answer!";
       toastType = "success";
@@ -140,49 +193,58 @@ function ExercisesPage() {
       feedbackMessage = "⚠️ Partially correct! Some answers are missing.";
       toastType = "warning";
     } else if (correctSelections > 0 && incorrectSelections > 0) {
-      feedbackMessage =
-        "⚠️ Partially correct! Some correct, but some are incorrect.";
+      feedbackMessage = "⚠️ Partially correct! Some correct, but some are incorrect.";
       toastType = "warning";
     } else {
       feedbackMessage = "❌ Wrong answer!";
       toastType = "error";
     }
-
+  
     toast[toastType](feedbackMessage, { autoClose: 1500 });
-
+  
     try {
       await axios.post("http://localhost:3001/saveAnswerByQuestion", {
         studentId: studentData._id,
         contentId: currentQuestion.contentId,
         questionId: currentQuestion._id,
         selectedAnswers: selectedKeys,
-        isCorrect:
-          correctSelections === correctKeys.length && incorrectSelections === 0,
+        isCorrect: correctSelections === correctKeys.length && incorrectSelections === 0,
         isPartiallyCorrect: correctSelections > 0 && incorrectSelections > 0,
       });
+  
+      setTimeout(() => {
+        const currentTitle = titles[currentTitleIndex];
+        const questions = questionsByTitle[currentTitle]?.questions || [];
+  
+        if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex((prev) => {
+            const newIndex = prev + 1;
+            localStorage.setItem("currentQuestionIndex", newIndex);
+            return newIndex;
+          });
+        } else if (currentTitleIndex < titles.length - 1) {
+          setCurrentTitleIndex((prev) => {
+            const newTitleIndex = prev + 1;
+            localStorage.setItem("currentTitleIndex", newTitleIndex);
+            return newTitleIndex;
+          });
+          setCurrentQuestionIndex(0);
+          localStorage.setItem("currentQuestionIndex", 0);
+        } else {
+          updateExerciseStatus();
+        }
+  
+        setSelectedAnswers({});
+      }, 1600);
     } catch (error) {
       console.error("Error submitting answer:", error);
     }
-
-    setTimeout(() => {
-      const currentTitle = titles[currentTitleIndex];
-      const questions = questionsByTitle[currentTitle]?.questions || [];
-
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex((prev) => prev + 1);
-      } else if (currentTitleIndex < titles.length - 1) {
-        setCurrentTitleIndex((prev) => prev + 1);
-        setCurrentQuestionIndex(0);
-      } else {
-        navigate("/congrats");
-      }
-
-      setSelectedAnswers({});
-    }, 1600);
   };
+  
 
   const currentTitle = titles[currentTitleIndex];
   const currentQuestion = getCurrentQuestion();
+  console.log("currentQuestion:", currentQuestion);
   const contentDetail = questionsByTitle[currentTitle] || {};
 
   return (
@@ -202,23 +264,43 @@ function ExercisesPage() {
         </div>
       </div>
 
-      <div className={`card card-${theme}`}>
-        <div className="card-header">
-          <h3 className="card-title">Exercises</h3>
+      <div
+        className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
+      >
+        {/* Card Header */}
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-center`}
+        >
+          <h2 className="card-title font-weight-bold m-0">
+            📚 Reading Comprehension
+          </h2>
+        </div>
+        {/* /.card-header */}
+        <div className="d-flex justify-content-end mt-2 me-3">
           <Timer duration={timeLeft} onTimeUp={handleTimeUp} />
         </div>
-
-        <div className="card-body">
-          {currentTitle ? (
-            <h4>Topic: {currentTitle}</h4>
-          ) : (
-            <p>No title available.</p>
-          )}
-
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
           {/* Display Content Details */}
           {contentDetail.description && (
-            <div className="mb-3 p-3 border rounded bg-light">
-              <h5>Category: {contentDetail.category}</h5>
+            <div
+              className={`mb-3 p-3 border rounded ${
+                theme === "dark" ? "bg-dark text-white" : "bg-light"
+              }`}
+            >
+              {/* <h5>Category: {contentDetail.category}</h5> */}
+              {currentTitle ? (
+                <h4>{currentTitle}</h4>
+              ) : (
+                <p>No title available.</p>
+              )}
               <p
                 className="text-justify"
                 style={{ textAlign: "justify", textIndent: "2em" }}
@@ -248,36 +330,44 @@ function ExercisesPage() {
 
           {/* Display Question */}
           {currentQuestion ? (
-            <div className="border rounded p-3">
+            <div className="border rounded p-3 text-start">
+              {/* Question aligned to the left */}
               <h5>{currentQuestion.question}</h5>
-              {["A", "B", "C", "D"].map((key) => (
-                <div key={key} className="form-check mt-2">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id={`${currentQuestion._id}-${key}`}
-                    checked={
-                      selectedAnswers[currentQuestion._id]?.[key] || false
-                    }
-                    onChange={() =>
-                      handleCheckboxChange(currentQuestion._id, key)
-                    }
-                  />
-                  <label
-                    className="cursor-pointer"
-                    htmlFor={`${currentQuestion._id}-${key}`}
-                  >
-                    {currentQuestion[`answer${key}`]}
-                  </label>
-                </div>
-              ))}
+
+              {/* Answers aligned to the left */}
+              <div className="d-flex flex-column">
+                {["A", "B", "C", "D"].map((key) => (
+                  <div key={key} className="form-check mt-2">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id={`${currentQuestion._id}-${key}`}
+                      checked={
+                        selectedAnswers[currentQuestion._id]?.[key] || false
+                      }
+                      onChange={() =>
+                        handleCheckboxChange(currentQuestion._id, key)
+                      }
+                    />
+                    <label
+                      className="cursor-pointer ms-2"
+                      htmlFor={`${currentQuestion._id}-${key}`}
+                    >
+                      {key}) {currentQuestion[`answer${key}`]}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <p>No question available.</p>
           )}
 
-          <button className="btn btn-primary mt-3" onClick={handleSubmitAnswer}>
-            Submit Answer
+          <button
+            className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
+            onClick={handleSubmitAnswer}
+          >
+            🚀 Submit Answer
           </button>
         </div>
       </div>

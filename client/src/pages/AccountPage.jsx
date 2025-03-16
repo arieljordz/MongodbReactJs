@@ -170,19 +170,32 @@ function AccountPage() {
                 <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a children="text-blue">Student</a>
+                <a children="text-blue">Students</a>
               </li>
             </ol>
           </nav>
         </div>
       </div>
 
-      <div className={`card card-${theme}`}>
-        <div className="card-header">
-          <h3 className="card-title">Students</h3>
+      <div
+        className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
+      >
+        {/* Card Header */}
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-center`}
+        >
+          <h2 className="card-title font-weight-bold m-0">🧑‍🎓 Students</h2>
         </div>
         {/* /.card-header */}
-        <div className="card-body">
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
           {/* Search Bar and Add New Button in One Row */}
           <div className="mb-3 row g-2 align-items-center">
             {/* Add New Button (col-1 on desktop, full-width on mobile) */}
@@ -273,7 +286,9 @@ function AccountPage() {
                     <tr
                       key={rowIndex}
                       className={
-                        selectedRow === rowIndex ? "table-primary cursor-pointer" : "cursor-pointer"
+                        selectedRow === rowIndex
+                          ? "table-primary cursor-pointer"
+                          : "cursor-pointer"
                       }
                       onClick={(event) => handleRowClick(rowIndex, event, item)}
                     >

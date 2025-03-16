@@ -175,19 +175,32 @@ function QuestionPage() {
                 <a children="text-blue">Home</a>
               </li>
               <li className="breadcrumb-item">
-                <a children="text-blue">Question</a>
+                <a children="text-blue">Questions</a>
               </li>
             </ol>
           </nav>
         </div>
       </div>
 
-      <div className={`card card-${theme}`}>
-        <div className="card-header">
-          <h3 className="card-title">Questions</h3>
+      <div
+        className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
+      >
+        {/* Card Header */}
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-center`}
+        >
+          <h2 className="card-title font-weight-bold m-0">📝 Questions</h2>
         </div>
         {/* /.card-header */}
-        <div className="card-body">
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
           {/* Search Bar and Add New Button in One Row */}
           <div className="mb-3 row g-2 align-items-center">
             {/* Add New Button (col-1 on desktop, full-width on mobile) */}
@@ -236,16 +249,18 @@ function QuestionPage() {
                   paginatedTitles.map((title) => (
                     <React.Fragment key={title}>
                       <tr className="table-info">
-                        <td colSpan="7">
-                          <button
-                            onClick={() => toggleExpand(title)}
-                            className="text-lg font-bold me-4"
-                          >
-                            <FontAwesomeIcon
-                              icon={expandedTitles[title] ? faMinus : faPlus}
-                            />
-                          </button>
-                          <strong>{title.toUpperCase()}</strong>
+                        <td colSpan="7" className="text-start">
+                          <div className="d-flex align-items-center">
+                            <button
+                              onClick={() => toggleExpand(title)}
+                              className="text-lg font-bold me-2"
+                            >
+                              <FontAwesomeIcon
+                                icon={expandedTitles[title] ? faMinus : faPlus}
+                              />
+                            </button>
+                            <strong>{title.toUpperCase()}</strong>
+                          </div>
                         </td>
                       </tr>
 

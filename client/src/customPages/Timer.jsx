@@ -23,7 +23,11 @@ const Timer = ({ duration, onTimeUp }) => {
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  return <h6 className="text-danger d-flex justify-content-end">Time Left: {formatTime(timeLeft)}</h6>;
+  return (
+    <h5 className="text-danger d-flex justify-content-end">
+      Time Left: {formatTime(timeLeft)}
+    </h5>
+  );
 };
 
 export default Timer;

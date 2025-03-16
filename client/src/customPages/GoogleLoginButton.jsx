@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import jwt_decode from "jwt-decode";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-function GoogleLoginButton({ userDetails, navigate, setStudentData }) {
+function GoogleLoginButton({ userDetails , setStudentData}) {
   const [students, setStudents] = useState([]);
+  const navigate = useNavigate();
   // console.log("GoogleLoginButton: ", setStudentData);
 
   // Fetch students data
@@ -58,10 +60,9 @@ function GoogleLoginButton({ userDetails, navigate, setStudentData }) {
     setStudentData(validatedStudent);
 
     // Redirect based on userType
-    navigate(
-      validatedStudent.userType === "student" ? "/home" : "/results",
-      { state: validatedStudent }
-    );
+    // navigate(
+    //   validatedStudent.userType === "student" ? "/student/home" : "/admin/results"
+    // );
   };
 
   const handleFailure = () => {

@@ -6,12 +6,12 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
-function CongratsPage() {
+function CongratsPage( allowedPath ) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const navigate = useNavigate();
 
-  console.log("CongratsPage: ", studentData);
+  console.log("CongratsPage: ", allowedPath);
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -31,21 +31,33 @@ function CongratsPage() {
       </div>
 
       <div
-        className={`card card-${theme} shadow-lg rounded-lg text-center p-4 mx-auto`}
+        className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
       >
-        <div className="card-header bg-success text-white py-3 d-flex justify-content-center">
-          <h3 className="card-title font-weight-bold m-0">
-            🎉 Congratulations! 🎉
-          </h3>
+        {/* Card Header */}
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-center`}
+        >
+          <h2 className="card-title font-weight-bold m-0">
+            🎉 Congratulations!
+          </h2>
         </div>
         {/* /.card-header */}
-        <div className="card-body">
-          <p className="text-lg font-weight-medium">
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
+          <p className="lead">
             You did an amazing job! Keep up the great work! 🚀
           </p>
+
           <button
             className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
-            onClick={() => navigate("/results")}
+            onClick={() => navigate("/student/results")}
           >
             🎯 See Results
           </button>

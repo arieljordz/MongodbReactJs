@@ -89,6 +89,20 @@ body[data-theme="light"] {
   cursor: pointer !important;
 }
 
+.dark-mode {
+  background-color: #454d55 !important;
+  color: #fff;
+}
+
+.bg-success-dark-mode {
+  background-color: #00bc8c !important;
+}
+
+.btn-primary-dark-mode {
+  color: #fff;
+  background-color: #335476;
+  border-color: #304e6d;
+}
 
 
 

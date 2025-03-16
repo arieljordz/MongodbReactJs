@@ -5,14 +5,13 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
-function ResultPage({ moveToNextStep, allowedPath }) {
+function AllResultPage() {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const [results, setResults] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
   const studentId = studentData._id;
-  
-  console.log("ResultPage: ", allowedPath);
+  // console.log("AllResultPage: ", studentData);
 
   const getExerciseResults = async () => {
     try {
@@ -247,4 +246,4 @@ function ResultPage({ moveToNextStep, allowedPath }) {
   );
 }
 
-export default ResultPage;
+export default AllResultPage;

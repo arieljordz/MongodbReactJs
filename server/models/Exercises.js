@@ -9,6 +9,7 @@ const ExercisesSchema = new mongoose.Schema({
   },
   sequence: String,
   titles: String,
+  isDone: { type: Boolean },
   dateStarted: { type: Date, default: Date.now },
 });
 

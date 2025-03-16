@@ -10,14 +10,20 @@ function NavBar({ studentData }) {
   const handleLogout = () => {
     console.log("User logged out! Implement logout logic here.");
     localStorage.removeItem("user");
+    localStorage.removeItem("allowedPath");
+    localStorage.removeItem("exerciseProgress");
     window.location.href = "/";
   };
-
+  const handleProfile = () => {
+    alert("Show profile modal");
+  };
   return (
     <div>
       <nav className="navbar navbar-expand-lg bg-dark navbar-dark fixed-top">
         <div className="container">
-          <label className="navbar-brand">MyApp</label>
+          <label className="navbar-brand">E-Learning</label>
+
+          {/* Navbar Toggler for Mobile View */}
           <button
             className="navbar-toggler"
             type="button"
@@ -29,78 +35,42 @@ function NavBar({ studentData }) {
           >
             <span className="navbar-toggler-icon" />
           </button>
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav me-auto">
-              {studentData?.userType === "student" ? (
-                <>
-                  {/* <li className="nav-item">
-                    <Link className="nav-link" to="/home">
-                      | Home
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/exercises">
-                      | Exercises
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/result">
-                      | Result
-                    </Link>
-                  </li> */}
-                </>
-              ) : (
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/result">
-                      | Result
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/account">
-                      | Student
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/content">
-                      | Content
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/question">
-                      | Question
-                    </Link>
-                  </li>
-                </>
-              )}
-            </ul>
 
-            {/* Right-aligned User Info and Logout */}
-            <ul className="navbar-nav">
-              {/* {studentData && (
+          <div className="collapse navbar-collapse" id="navbarNav">
+            {studentData?.userType === "teacher" && (
+              <ul className="navbar-nav me-auto">
                 <li className="nav-item">
-                  <label className="nav-link text-white">
-                    {studentData.email}
-                  </label>
+                  <Link className="nav-link" to="/admin/results">
+                    Results
+                  </Link>
                 </li>
-              )}
-              <li className="nav-item">
-                <Link className="nav-link text-white" to="/">
-                  Logout
-                </Link>
-              </li>
-              <button
-                className="btn btn-outline-secondary"
-                onClick={toggleTheme}
-              >
-                {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
-              </button> */}
-              <Settings
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                onLogout={handleLogout}
-              />
-            </ul>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/admin/accounts">
+                    Students
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/admin/contents">
+                    Contents
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/admin/questions">
+                    Questions
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </div>
+
+          {/* Move Settings Outside the Collapsible Menu for Mobile View */}
+          <div className="d-flex ms-auto align-items-center">
+            <Settings
+              theme={theme}
+              onProfile={handleProfile}
+              onToggleTheme={toggleTheme}
+              onLogout={handleLogout}
+            />
           </div>
         </div>
       </nav>

@@ -229,14 +229,15 @@ app.post("/getQuestionsBycontentIds", async (req, res) => {
     let { contentIds } = req.body; // These are actually contentIds
 
     // Convert contentIds to ObjectId
-    const objectIds = contentIds.map(id => new mongoose.Types.ObjectId(id));
+    const objectIds = contentIds.map((id) => new mongoose.Types.ObjectId(id));
 
     console.log("Received contentIds:", contentIds);
     console.log("Converted ObjectIds:", objectIds);
 
     // Query using contentId instead of _id and populate content details
-    const questions = await QuestionModel.find({ contentId: { $in: objectIds } })
-      .populate("contentId"); // This assumes contentId is a reference to another collection
+    const questions = await QuestionModel.find({
+      contentId: { $in: objectIds },
+    }).populate("contentId"); // This assumes contentId is a reference to another collection
 
     console.log("Fetched Questions with Content Details:", questions);
     res.json(questions);
@@ -348,7 +349,14 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
 
 app.post("/saveAnswerByQuestion", async (req, res) => {
   try {
-    const { studentId, contentId, questionId, selectedAnswers, isCorrect, isPartiallyCorrect } = req.body;
+    const {
+      studentId,
+      contentId,
+      questionId,
+      selectedAnswers,
+      isCorrect,
+      isPartiallyCorrect,
+    } = req.body;
 
     if (!studentId || !contentId || !questionId || !selectedAnswers) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -397,33 +405,233 @@ app.get("/getExercises/all", async (req, res) => {
   }
 });
 
-app.put("/updateOrCreateExercise/:id", async (req, res) => {
+app.put("/startExercise/:studentId", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { sequence, titles, dateStarted } = req.body;
+    const { studentId } = req.params;
+    const { sequence, titles, isDone, dateStarted } = req.body;
 
-    // Validate if ID is a valid MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
+    // Validate if studentId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid studentId format" });
     }
 
-    // Use `findByIdAndUpdate` with `upsert: true`
-    const exercise = await ExercisesModel.findByIdAndUpdate(
-      id,
-      { sequence, titles, dateStarted },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
+    // Check if there is an existing exercise with the studentId and isDone=false
+    const existingExercise = await ExercisesModel.findOne({
+      studentId,
+      isDone: false,
+    });
 
-    res.status(200).json(exercise);
+    if (existingExercise) {
+      // Update the existing exercise if it's not done
+      existingExercise.sequence = sequence;
+      existingExercise.titles = titles;
+      existingExercise.dateStarted = dateStarted;
+
+      const updatedExercise = await existingExercise.save();
+      return res.status(200).json(updatedExercise);
+    }
+
+    // If student has previous exercises but all are done, create a new one
+    const newExercise = new ExercisesModel({
+      _id: new mongoose.Types.ObjectId(), // Generate a new _id
+      studentId,
+      sequence,
+      titles,
+      isDone,
+      dateStarted,
+    });
+
+    await newExercise.save();
+    res.status(201).json(newExercise);
   } catch (error) {
     console.error("Error updating or inserting exercise:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+app.put("/updateExerciseStatus/:studentId", async (req, res) => {
+  try {
+    const { studentId } = req.params;
 
+    // Validate if studentId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid studentId format" });
+    }
 
+    // Find and update the exercise where studentId matches and isDone = false
+    const updatedExercise = await ExercisesModel.findOneAndUpdate(
+      { studentId, isDone: false }, // Filter: Match studentId and isDone = false
+      { isDone: true }, // Update: Set isDone to true
+      { new: true } // Return updated document
+    );
 
+    if (!updatedExercise) {
+      return res
+        .status(404)
+        .json({ message: "No active exercise found to update." });
+    }
+
+    res.status(200).json(updatedExercise);
+  } catch (error) {
+    console.error("Error updating exercise status:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/getExerciseResults/:studentId", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid studentId format" });
+    }
+
+    // Aggregation to count correct and wrong answers grouped by contentId, then join with Content collection
+    const results = await AnswerModel.aggregate([
+      {
+        $match: {
+          studentId: new mongoose.Types.ObjectId(studentId),
+        },
+      },
+      {
+        $group: {
+          _id: "$contentId",
+          correctCount: { $sum: { $cond: ["$isCorrect", 1, 0] } }, // Count correct answers
+          wrongCount: { $sum: { $cond: ["$isCorrect", 0, 1] } }, // Count wrong answers
+          totalCount: { $sum: 1 }, // Total count (correct + wrong)
+        },
+      },
+      {
+        $lookup: {
+          from: "contents", // Name of the content collection in MongoDB
+          localField: "_id",
+          foreignField: "_id",
+          as: "contentDetails",
+        },
+      },
+      {
+        $unwind: "$contentDetails", // Unwind the content details array to a single object
+      },
+      {
+        $project: {
+          _id: 0,
+          contentId: "$_id",
+          correctCount: 1,
+          wrongCount: 1,
+          totalCount: 1, // Include total count
+          title: "$contentDetails.title",
+          description: "$contentDetails.description",
+          link: "$contentDetails.link",
+          category: "$contentDetails.category",
+        },
+      },
+    ]);
+
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No answers found for the given studentId." });
+    }
+
+    res.status(200).json(results); // Return grouped results with content details
+  } catch (error) {
+    console.error("Error retrieving answer stats:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/getContentWithQuestions/:contentId", async (req, res) => {
+  try {
+    const { contentId } = req.params;
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(contentId)) {
+      return res.status(400).json({ message: "Invalid contentId format" });
+    }
+
+    // Find the content details
+    const content = await ContentModel.findById(contentId);
+    if (!content) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    // Find all questions related to the contentId
+    const questions = await QuestionModel.find({ contentId: contentId });
+
+    res.status(200).json({
+      title: content.title,
+      questions: questions.map((q) => ({
+        id: q._id,
+        question: q.question,
+        answerA: q.answerA,
+        answerACheck: q.answerACheck,
+        answerB: q.answerB,
+        answerBCheck: q.answerBCheck,
+        answerC: q.answerC,
+        answerCCheck: q.answerCCheck,
+        answerD: q.answerD,
+        answerDCheck: q.answerDCheck,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching content and questions:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/getStudentsAnswer/:contentId/:studentId", async (req, res) => {
+  try {
+    const { contentId, studentId } = req.params;
+
+    // Validate MongoDB ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(contentId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid contentId or studentId format" });
+    }
+
+    // Find the content details
+    const content = await ContentModel.findById(contentId);
+    if (!content) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    // Find all questions related to the contentId
+    const questions = await QuestionModel.find({ contentId });
+
+    // Fetch student's answers for the given contentId
+    const studentAnswers = await AnswerModel.find({ contentId, studentId });
+
+    // Map questions to include student's answer
+    const formattedQuestions = questions.map((q) => {
+      // Find the student's answer for this question
+      const studentAnswer = studentAnswers.find((ans) => ans.questionId.toString() === q._id.toString());
+
+      return {
+        id: q._id,
+        question: q.question,
+        answerA: q.answerA,
+        answerACheck: q.answerACheck,
+        answerB: q.answerB,
+        answerBCheck: q.answerBCheck,
+        answerC: q.answerC,
+        answerCCheck: q.answerCCheck,
+        answerD: q.answerD,
+        answerDCheck: q.answerDCheck,
+        studentSelectedAnswers: studentAnswer ? studentAnswer.selectedAnswers : null, // Student's selected answers
+        isCorrect: studentAnswer ? studentAnswer.isCorrect : null, // Whether the student got it right
+        isPartiallyCorrect: studentAnswer ? studentAnswer.isPartiallyCorrect : null, // Partial correctness
+      };
+    });
+
+    res.status(200).json({
+      title: content.title,
+      questions: formattedQuestions,
+    });
+  } catch (error) {
+    console.error("Error fetching content, questions, and student answers:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 
 
