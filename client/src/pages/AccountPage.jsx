@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
-function AccountPage() {
+function AccountPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const [students, setStudents] = useState([]);

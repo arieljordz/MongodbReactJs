@@ -6,12 +6,17 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
-function CongratsPage( allowedPath ) {
+function CongratsPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const navigate = useNavigate();
 
   console.log("CongratsPage: ", allowedPath);
+
+  const handleSeeResults = async () => {
+    moveToNextStep();
+    navigate("/student/results");
+  };
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -57,7 +62,7 @@ function CongratsPage( allowedPath ) {
 
           <button
             className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
-            onClick={() => navigate("/student/results")}
+            onClick={handleSeeResults}
           >
             🎯 See Results
           </button>

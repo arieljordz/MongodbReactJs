@@ -5,10 +5,10 @@ import jwt_decode from "jwt-decode";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-function GoogleLoginButton({ userDetails , setStudentData}) {
+function GoogleLoginButton({ userDetails, setStudentData }) {
   const [students, setStudents] = useState([]);
   const navigate = useNavigate();
-  // console.log("GoogleLoginButton: ", setStudentData);
+  // console.log("GoogleLoginButton: ", userDetails);
 
   // Fetch students data
   const fetchStudents = async () => {
@@ -31,18 +31,19 @@ function GoogleLoginButton({ userDetails , setStudentData}) {
 
   const handleSuccess = (response) => {
     const decoded = jwt_decode(response.credential);
-
-    // User Data
+  
+    // User Data from Google
     const userData = {
       email: decoded.email,
-      userType: userDetails.userType,
       firstName: decoded.given_name,
       lastName: decoded.family_name,
+      userType: userDetails.userType,
+      category: userDetails.category, 
     };
-
+  
+    // console.log("userData: ", userData);
     const validatedStudent = validateUser(userData);
-
-    // If the user is not registered
+  
     if (!validatedStudent) {
       toast.warning("Unauthorized: Email address is not registered.", {
         autoClose: 2000,
@@ -52,19 +53,17 @@ function GoogleLoginButton({ userDetails , setStudentData}) {
       console.error("Unauthorized: Email address is not registered.");
       return;
     }
-
-    // Store validated user data
-    localStorage.setItem("user", JSON.stringify(validatedStudent));
-
+  
+    // Merge validated student data with category
+    const updatedStudentData = { ...validatedStudent, category: userDetails.category };
+  
+    // Store updated user data in localStorage
+    localStorage.setItem("user", JSON.stringify(updatedStudentData));
+  
     // Pass student details to parent component
-    setStudentData(validatedStudent);
-
-    // Redirect based on userType
-    // navigate(
-    //   validatedStudent.userType === "student" ? "/student/home" : "/admin/results"
-    // );
+    setStudentData(updatedStudentData);
   };
-
+  
   const handleFailure = () => {
     console.log("Google login failed");
   };

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import NavBar from "./NavBar";
 import LoginPage from "../pages/LoginPage";
@@ -11,6 +17,7 @@ import AllResultPage from "../pages/AllResultPage";
 import CongratsPage from "../pages/CongratsPage";
 import AccountPage from "../pages/AccountPage";
 import QuestionPage from "../pages/QuestionPage";
+import AppSettingsPage from "../pages/AppSettingsPage";
 import LoadingSpinner from "../customPages/LoadingSpinner";
 import PrivateRoute from "./PrivateRoute";
 import PreventBackNavigation from "../customPages/PreventBackNavigation";
@@ -19,14 +26,15 @@ import PreventBackNavigation from "../customPages/PreventBackNavigation";
 const studentFlow = [
   "/student/home",
   "/student/exercises",
-  "/student/results",
   "/student/congrats",
+  "/student/results",
 ];
 const teacherFlow = [
   "/admin/results",
   "/admin/contents",
   "/admin/questions",
   "/admin/accounts",
+  "/admin/appsettings",
 ];
 
 const Layout = () => {
@@ -45,7 +53,9 @@ const Layout = () => {
   const [allowedPath, setAllowedPath] = useState(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     const savedPath = localStorage.getItem("allowedPath");
-    return savedPath || (user?.userType ? getAllowedFlow(user.userType)[0] : "/");
+    return (
+      savedPath || (user?.userType ? getAllowedFlow(user.userType)[0] : "/")
+    );
   });
 
   useEffect(() => {
@@ -66,23 +76,28 @@ const Layout = () => {
       const flow = getAllowedFlow(studentData.userType);
       const currentIndex = flow.indexOf(location.pathname);
       const allowedIndex = flow.indexOf(allowedPath);
-  
-      // console.log("Current path:", location.pathname);
-      // console.log("Allowed path:", allowedPath);
-      // console.log("Flow index:", currentIndex, "Allowed index:", allowedIndex);
-  
-      // If navigating forward or backward beyond the allowed step, redirect back
-      if (currentIndex > allowedIndex || currentIndex < allowedIndex || currentIndex === -1) {
-        // console.log("User tried to navigate outside the allowed flow. Redirecting...");
+
+      // Allow teachers to navigate freely within their allowed routes
+      if (studentData.userType === "teacher") {
+        if (!flow.includes(location.pathname)) {
+          navigate(allowedPath, { replace: true });
+        }
+        return;
+      }
+
+      // For students, enforce the step-by-step navigation
+      if (
+        currentIndex > allowedIndex ||
+        currentIndex < allowedIndex ||
+        currentIndex === -1
+      ) {
         navigate(allowedPath, { replace: true });
       } else {
-        // Update allowedPath if user reaches a valid step
         setAllowedPath(flow[currentIndex]);
         localStorage.setItem("allowedPath", flow[currentIndex]);
       }
     }
   }, [location.pathname, studentData, allowedPath, navigate]);
-  
 
   useEffect(() => {
     const checkAuth = () => {
@@ -119,44 +134,121 @@ const Layout = () => {
     <div className={theme}>
       <PreventBackNavigation />
       {location.pathname !== "/" && studentData?.userType && (
-        <NavBar studentData={studentData} />
+        <NavBar
+          studentData={studentData}
+          moveToNextStep={moveToNextStep}
+          allowedPath={allowedPath}
+        />
       )}
       <LoadingSpinner />
       <Routes>
         {/* Public Route */}
-        <Route path="/" element={<LoginPage setStudentData={setStudentData} />} />
+        <Route
+          path="/"
+          element={<LoginPage setStudentData={setStudentData} />}
+        />
 
         {/* Protected Routes for Students */}
         <Route
           element={
-            <PrivateRoute studentData={studentData} allowedRoles={["student"]} />
+            <PrivateRoute
+              studentData={studentData}
+              allowedRoles={["student"]}
+            />
           }
         >
           <Route
             path="/student/home"
-            element={<HomePage moveToNextStep={moveToNextStep} allowedPath={allowedPath} />}
+            element={
+              <HomePage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
           />
           <Route
             path="/student/exercises"
-            element={<ExercisesPage moveToNextStep={moveToNextStep} allowedPath={allowedPath} />}
+            element={
+              <ExercisesPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
           />
           <Route
             path="/student/results"
-            element={<ResultPage moveToNextStep={moveToNextStep} allowedPath={allowedPath} />}
+            element={
+              <ResultPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
           />
-          <Route path="/student/congrats" element={<CongratsPage allowedPath={allowedPath} />} />
+          <Route
+            path="/student/congrats"
+            element={
+              <CongratsPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
         </Route>
 
         {/* Protected Routes for Teachers */}
         <Route
           element={
-            <PrivateRoute studentData={studentData} allowedRoles={["teacher"]} />
+            <PrivateRoute
+              studentData={studentData}
+              allowedRoles={["teacher"]}
+            />
           }
         >
-          <Route path="/admin/results" element={<AllResultPage />} />
-          <Route path="/admin/contents" element={<ContentPage />} />
-          <Route path="/admin/questions" element={<QuestionPage />} />
-          <Route path="/admin/accounts" element={<AccountPage />} />
+          <Route
+            path="/admin/results"
+            element={
+              <AllResultPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
+          <Route
+            path="/admin/contents"
+            element={
+              <ContentPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
+          <Route
+            path="/admin/questions"
+            element={
+              <QuestionPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
+          <Route
+            path="/admin/accounts"
+            element={
+              <AccountPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
+          <Route
+            path="/admin/appsettings"
+            element={
+              <AppSettingsPage
+                moveToNextStep={moveToNextStep}
+                allowedPath={allowedPath}
+              />
+            }
+          />
         </Route>
 
         {/* Catch-all route for undefined paths */}

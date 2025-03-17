@@ -8,7 +8,7 @@ import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
 import QuestionModal from "../modals/QuestionModal";
 import { useTheme } from "../customPages/ThemeContext";
 
-function QuestionPage() {
+function QuestionPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const [contents, setContents] = useState([]);
   const [questions, setQuestions] = useState([]);

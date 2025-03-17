@@ -2,21 +2,33 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import Settings from "./Settings";
+import { useNavigate } from "react-router-dom";
 
-function NavBar({ studentData }) {
+function NavBar({ studentData, moveToNextStep, allowedPath }) {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   // console.log("NavBar: ", studentData);
 
   const handleLogout = () => {
     console.log("User logged out! Implement logout logic here.");
     localStorage.removeItem("user");
     localStorage.removeItem("allowedPath");
-    localStorage.removeItem("exerciseProgress");
+    localStorage.removeItem("progress");
     window.location.href = "/";
   };
+
   const handleProfile = () => {
     alert("Show profile modal");
   };
+
+  const handleClick = (path) => {
+    moveToNextStep(); // Call your function
+    // navigate(path); // Navigate after function execution
+    setTimeout(() => {
+      window.location.href = path; // Navigate programmatically
+    }, 100);
+  };
+
   return (
     <div>
       <nav className="navbar navbar-expand-lg bg-dark navbar-dark fixed-top">
@@ -40,23 +52,43 @@ function NavBar({ studentData }) {
             {studentData?.userType === "teacher" && (
               <ul className="navbar-nav me-auto">
                 <li className="nav-item">
-                  <Link className="nav-link" to="/admin/results">
+                  <Link
+                    className="nav-link"
+                    onClick={() => handleClick("/admin/results")}
+                  >
                     Results
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/admin/accounts">
+                  <Link
+                    className="nav-link"
+                    onClick={() => handleClick("/admin/accounts")}
+                  >
                     Students
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/admin/contents">
+                  <Link
+                    className="nav-link"
+                    onClick={() => handleClick("/admin/contents")}
+                  >
                     Contents
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/admin/questions">
+                  <Link
+                    className="nav-link"
+                    onClick={() => handleClick("/admin/questions")}
+                  >
                     Questions
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className="nav-link"
+                    onClick={() => handleClick("/admin/appsettings")}
+                  >
+                    AppSettings
                   </Link>
                 </li>
               </ul>

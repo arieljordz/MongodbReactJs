@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from "react";
 
-const Timer = ({ duration, onTimeUp }) => {
+const Timer = ({ duration, onTimeUp, updateTimeLeft }) => {
   const [timeLeft, setTimeLeft] = useState(duration);
 
   useEffect(() => {
+    setTimeLeft(duration); // ✅ Reset timer when duration changes
+  }, [duration]);
+
+  useEffect(() => {
     if (timeLeft <= 0) {
-      onTimeUp(); // Call the callback function when time runs out
+      onTimeUp();
       return;
     }
 
     const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          onTimeUp();
+          return 0;
+        }
+        const newTime = prevTime - 1;
+        updateTimeLeft(newTime); // ✅ Send updated time to parent every second
+        return newTime;
+      });
     }, 1000);
 
-    return () => clearInterval(timer); // Cleanup on unmount
+    return () => clearInterval(timer); // ✅ Cleanup on unmount
   }, [timeLeft, onTimeUp]);
 
   // Format time (MM:SS)

@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "../customPages/ThemeContext";
 
-function ContentPage() {
+function ContentPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const [contents, setContents] = useState([]);

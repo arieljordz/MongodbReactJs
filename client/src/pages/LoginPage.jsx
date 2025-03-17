@@ -6,9 +6,11 @@ import { useNavigate } from "react-router-dom";
 function LoginPage({ setStudentData }) {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const [userDetails, setUserDetails] = useState({ userType: "student" });
+  const [userDetails, setUserDetails] = useState({
+    userType: "student",
+    category: "",
+  });
 
-  // console.log("Login: ", setStudentData);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserDetails((prevDetails) => ({
@@ -38,10 +40,27 @@ function LoginPage({ setStudentData }) {
           </select>
         </div>
 
+        {/* Category Selection */}
+        <div className="mb-3">
+          <label className="form-label">Category</label>
+          <select
+            className="form-select"
+            name="category"
+            value={userDetails.category}
+            onChange={handleChange}
+          >
+            <option value="">Select Category</option>
+            <option value="english">English</option>
+            <option value="math">Math</option>
+            <option value="science">Science</option>
+            <option value="history">History</option>
+          </select>
+        </div>
+
         {/* Google Login Button */}
         <GoogleLoginButton
           userDetails={userDetails}
-          setStudentData={setStudentData} 
+          setStudentData={setStudentData}
         />
       </div>
     </div>

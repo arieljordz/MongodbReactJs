@@ -10,7 +10,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
   const navigate = useNavigate();
   const [contents, setContents] = useState([]);
 
-  // console.log("HomePage: ", allowedPath);
+  // console.log("HomePage: ", studentData);
 
   useEffect(() => {
     const fetchContents = async () => {
@@ -37,35 +37,29 @@ function HomePage({ moveToNextStep, allowedPath }) {
   };
 
   const handleStartExercises = async () => {
-    if (!studentData._id || contents.length === 0) {
-      console.error("Error: Missing studentId or no contents available");
+    if (!studentData?._id || !studentData?.category) {
+      console.error("Error: Missing studentId or category");
       return;
     }
 
-    // Shuffle contents and extract IDs & Titles
-    const shuffledContents = shuffleArray([...contents]);
-    const sequence = shuffledContents.map((content) => content._id).join(",");
-    const titles = shuffledContents.map((content) => content.title).join(",");
-
-    const exerciseData = {
-      studentId: studentData._id,
-      sequence,
-      titles,
-      isDone: false,
-      dateStarted: new Date().toISOString(),
-    };
-
     try {
-      const response = await axios.put(
-        `http://localhost:3001/startExercise/${studentData._id}`,
-        exerciseData
+      const response = await axios.get(
+        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}`
       );
 
-      // console.log("Exercise updated or created:", response.data);
-      moveToNextStep();
-      navigate("/student/exercises");
+      // Axios automatically parses JSON, no need for `response.json()`
+      console.log("Student Progress:", response.data);
+
+      // Move to next step only if progress data is available
+      if (response.data) {
+        moveToNextStep();
+        navigate("/student/exercises");
+      }
     } catch (error) {
-      console.error("Error updating or creating exercise:", error);
+      console.error(
+        "Error fetching progress:",
+        error.response?.data || error.message
+      );
     }
   };
 

@@ -7,6 +7,8 @@ const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
 const AnswerModel = require("./models/Answers");
 const ExercisesModel = require("./models/Exercises");
+const ProgressModel = require("./models/Progress");
+const AppSettingsModel = require("./models/AppSettings");
 
 const app = express();
 app.use(express.json());
@@ -585,8 +587,13 @@ app.get("/getStudentsAnswer/:contentId/:studentId", async (req, res) => {
     const { contentId, studentId } = req.params;
 
     // Validate MongoDB ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(contentId) || !mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: "Invalid contentId or studentId format" });
+    if (
+      !mongoose.Types.ObjectId.isValid(contentId) ||
+      !mongoose.Types.ObjectId.isValid(studentId)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid contentId or studentId format" });
     }
 
     // Find the content details
@@ -604,7 +611,9 @@ app.get("/getStudentsAnswer/:contentId/:studentId", async (req, res) => {
     // Map questions to include student's answer
     const formattedQuestions = questions.map((q) => {
       // Find the student's answer for this question
-      const studentAnswer = studentAnswers.find((ans) => ans.questionId.toString() === q._id.toString());
+      const studentAnswer = studentAnswers.find(
+        (ans) => ans.questionId.toString() === q._id.toString()
+      );
 
       return {
         id: q._id,
@@ -617,9 +626,13 @@ app.get("/getStudentsAnswer/:contentId/:studentId", async (req, res) => {
         answerCCheck: q.answerCCheck,
         answerD: q.answerD,
         answerDCheck: q.answerDCheck,
-        studentSelectedAnswers: studentAnswer ? studentAnswer.selectedAnswers : null, // Student's selected answers
+        studentSelectedAnswers: studentAnswer
+          ? studentAnswer.selectedAnswers
+          : null, // Student's selected answers
         isCorrect: studentAnswer ? studentAnswer.isCorrect : null, // Whether the student got it right
-        isPartiallyCorrect: studentAnswer ? studentAnswer.isPartiallyCorrect : null, // Partial correctness
+        isPartiallyCorrect: studentAnswer
+          ? studentAnswer.isPartiallyCorrect
+          : null, // Partial correctness
       };
     });
 
@@ -628,13 +641,251 @@ app.get("/getStudentsAnswer/:contentId/:studentId", async (req, res) => {
       questions: formattedQuestions,
     });
   } catch (error) {
-    console.error("Error fetching content, questions, and student answers:", error);
+    console.error(
+      "Error fetching content, questions, and student answers:",
+      error
+    );
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+// Update progress for a specific student
+app.put("/updateProgress/:progressId", async (req, res) => {
+  try {
+    const { progressId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(progressId)) {
+      return res.status(400).json({ error: "Invalid progress ID" });
+    }
 
+    const updatedProgress = await ProgressModel.findByIdAndUpdate(
+      new mongoose.Types.ObjectId(progressId), // 🔥 Convert to ObjectId
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedProgress) {
+      return res.status(404).json({ error: "Progress not found" });
+    }
+
+    res.json(updatedProgress);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/getProgressOriginal/:studentId/:category", async (req, res) => {
+  try {
+    const { studentId, category } = req.params;
+    const studentObjectId = new mongoose.Types.ObjectId(studentId);
+
+    // ✅ Ensure student exists
+    const student = await PersonModel.findById(studentObjectId);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    // ✅ Check if progress already exists
+    let progress = await ProgressModel.findOne({
+      studentId: studentObjectId,
+      category,
+    })
+      .populate("studentId")
+      .populate({
+        path: "progress.contentId",
+        model: "Contents",
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    if (progress) {
+      return res.json(progress); // ✅ Return existing progress
+    }
+
+    // ✅ Fetch and shuffle content for the given category
+    let categoryContents = await ContentModel.find({ category });
+    if (!categoryContents.length) {
+      return res
+        .status(404)
+        .json({ message: "No content found for this category." });
+    }
+    categoryContents = categoryContents.sort(() => Math.random() - 0.5); // Shuffle contents
+
+    // ✅ Generate progress with shuffled questions per content
+    const progressData = await Promise.all(
+      categoryContents.map(async (content) => {
+        let questions = await QuestionModel.find({ contentId: content._id });
+        questions = questions.sort(() => Math.random() - 0.5); // Shuffle questions
+
+        return {
+          contentId: content._id,
+          currentQuestionIndex: 0,
+          answeredQuestions: questions.map((q) => ({
+            questionId: q._id,
+            selectedAnswers: [],
+            isCorrect: false,
+            isPartiallyCorrect: false,
+            isDone: false,
+          })),
+        };
+      })
+    );
+
+    // ✅ Create and save new progress
+    progress = new ProgressModel({
+      studentId: studentObjectId,
+      category,
+      progress: progressData,
+      timeLeft: 0,
+      isDone: false,
+      lastUpdated: new Date(),
+    });
+
+    await progress.save();
+
+    // ✅ Populate the newly created progress before returning
+    progress = await ProgressModel.findById(progress._id)
+      .populate("studentId")
+      .populate({
+        path: "progress.contentId",
+        model: "Contents",
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    res.json(progress);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to get student progress with timeLeft from AppSettings
+app.get("/getProgress/:studentId/:category", async (req, res) => {
+  try {
+    const { studentId, category } = req.params;
+    const studentObjectId = new mongoose.Types.ObjectId(studentId);
+
+    // ✅ Ensure student exists
+    const student = await PersonModel.findById(studentObjectId);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    // ✅ Check if progress already exists
+    let progress = await ProgressModel.findOne({
+      studentId: studentObjectId,
+      category,
+    })
+      .populate("studentId")
+      .populate({
+        path: "progress.contentId",
+        model: "Contents",
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    if (progress) {
+      return res.json(progress); // ✅ Return existing progress
+    }
+
+    // ✅ Fetch timeDuration from AppSettings and calculate timeLeft
+    const appSettings = await AppSettingsModel.findOne();
+    const timeLeft = appSettings ? parseInt(appSettings.timeDuration, 10) * 60 : 600;
+
+    // ✅ Fetch and shuffle content for the given category
+    let categoryContents = await ContentModel.find({ category });
+    if (!categoryContents.length) {
+      return res.status(404).json({ message: "No content found for this category." });
+    }
+    categoryContents = categoryContents.sort(() => Math.random() - 0.5); // Shuffle contents
+
+    // ✅ Generate progress with shuffled questions per content
+    const progressData = await Promise.all(
+      categoryContents.map(async (content) => {
+        let questions = await QuestionModel.find({ contentId: content._id });
+        questions = questions.sort(() => Math.random() - 0.5); // Shuffle questions
+
+        return {
+          contentId: content._id,
+          currentQuestionIndex: 0,
+          answeredQuestions: questions.map((q) => ({
+            questionId: q._id,
+            selectedAnswers: [],
+            isCorrect: false,
+            isPartiallyCorrect: false,
+            isDone: false,
+          })),
+        };
+      })
+    );
+
+    // ✅ Create and save new progress
+    progress = new ProgressModel({
+      studentId: studentObjectId,
+      category,
+      progress: progressData,
+      timeLeft,
+      isDone: false,
+      lastUpdated: new Date(),
+    });
+
+    await progress.save();
+
+    // ✅ Populate the newly created progress before returning
+    progress = await ProgressModel.findById(progress._id)
+      .populate("studentId")
+      .populate({
+        path: "progress.contentId",
+        model: "Contents",
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    res.json(progress);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to save or update AppSettings
+app.post("/saveAppSettings", async (req, res) => {
+  try {
+    const { timeDuration, isEnabled } = req.body;
+
+    const existingSettings = await AppSettingsModel.findOne();
+
+    if (existingSettings) {
+      // Update existing settings
+      existingSettings.timeDuration = timeDuration;
+      existingSettings.isEnabled = isEnabled;
+      await existingSettings.save();
+      return res
+        .status(200)
+        .json({ message: "Settings updated", existingSettings });
+    } else {
+      // Create new settings if none exist
+      const newSettings = await AppSettingsModel.create({
+        timeDuration,
+        isEnabled,
+      });
+      return res.status(201).json({ message: "Settings created", newSettings });
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error saving settings", error: error.message });
+  }
+});
+
+module.exports = AppSettingsModel;
 
 // Start Server
 const PORT = process.env.PORT || 3001;
