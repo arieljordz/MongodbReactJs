@@ -186,7 +186,7 @@ function AccountPage({ moveToNextStep, allowedPath }) {
             theme === "dark"
               ? "bg-success-dark-mode text-white"
               : "bg-success text-white"
-          } py-3 d-flex justify-content-center`}
+          } py-3 d-flex justify-content-start`}
         >
           <h2 className="card-title font-weight-bold m-0">🧑‍🎓 Students</h2>
         </div>

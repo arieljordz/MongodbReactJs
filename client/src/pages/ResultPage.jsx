@@ -24,17 +24,18 @@ const ResultPage = () => {
 
       // Fetch progress from database
       const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${true}`
+        `http://localhost:3001/getProgress/${studentData._id}/${
+          studentData.category
+        }/${true}`
       );
 
-      console.log("Fetched response:", response);
-
       if (response.data && response.data.progress) {
-        localStorage.setItem("progress", JSON.stringify(response.data));
         setResults(formatProgressData(response.data.progress));
-
-        console.log("Fetched and saved progress:", response.data);
-        console.log("Formatted progress:", formatProgressData(response.data.progress));
+        // console.log("Fetched response:", response.data);
+        console.log(
+          "Formatted progress:",
+          formatProgressData(response.data.progress)
+        );
       } else {
         console.warn("No progress found in DB.");
       }
@@ -54,7 +55,9 @@ const ResultPage = () => {
       percentage:
         answeredQuestions.length > 0
           ? Math.round(
-              (answeredQuestions.filter((q) => q.isCorrect).length / answeredQuestions.length) * 100
+              (answeredQuestions.filter((q) => q.isCorrect).length /
+                answeredQuestions.length) *
+                100
             )
           : 0,
       questions: answeredQuestions.map((q) => ({
@@ -83,23 +86,45 @@ const ResultPage = () => {
         <div className="d-flex justify-content-start">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
-              <li className="breadcrumb-item"><a className="text-blue">Home</a></li>
-              <li className="breadcrumb-item"><a className="text-blue">Results</a></li>
+              <li className="breadcrumb-item">
+                <a children="text-blue">Home</a>
+              </li>
+              <li className="breadcrumb-item">
+                <a children="text-blue">Results</a>
+              </li>
             </ol>
           </nav>
         </div>
       </div>
-      <div className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}>
-        <div className={`card-header ${theme === "dark" ? "bg-success-dark-mode text-white" : "bg-success text-white"}`}>
-          <h2 className="card-title font-weight-bold">🎯 Results!</h2>
+      <div
+        className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
+      >
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-start`}
+        >
+          <h2 className="card-title font-weight-bold m-0">🎯 Results!</h2>
         </div>
-        <div className={`card-body ${theme === "dark" ? "dark-mode text-white" : ""}`}>
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
           {results.length > 0 ? (
-            <ResultsTable results={results} setSelectedContent={setSelectedContent} theme={theme} />
+            <ResultsTable
+              results={results}
+              setSelectedContent={setSelectedContent}
+              theme={theme}
+            />
           ) : (
             <p className="text-center text-muted">No results available.</p>
           )}
-          {selectedContent && <ResultDetails selectedContent={selectedContent} theme={theme} />}
+          {selectedContent && (
+            <ResultDetails selectedContent={selectedContent} theme={theme} />
+          )}
         </div>
       </div>
     </div>
@@ -129,12 +154,19 @@ const ResultsTable = ({ results, setSelectedContent, theme }) => (
             <td>{result.correctCount}</td>
             <td>{result.percentage}%</td>
             <td>
-              <span className={`badge ${result.percentage >= 75 ? "bg-success" : "bg-danger"}`}>
+              <span
+                className={`badge ${
+                  result.percentage >= 75 ? "bg-success" : "bg-danger"
+                }`}
+              >
                 {result.percentage >= 75 ? "Passed" : "Failed"}
               </span>
             </td>
             <td>
-              <button className="btn btn-primary btn-sm" onClick={() => setSelectedContent(result)}>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => setSelectedContent(result)}
+              >
                 See Details
               </button>
             </td>
@@ -146,13 +178,23 @@ const ResultsTable = ({ results, setSelectedContent, theme }) => (
 );
 
 const ResultDetails = ({ selectedContent, theme }) => (
-  <div className={`card mt-4 p-3 ${theme === "dark" ? "bg-dark text-white" : ""}`}>
-    <h4 className={theme === "dark" ? "text-light" : "text-primary"}>{selectedContent.title}</h4>
-    <div className={`border rounded p-3 text-start ${theme === "dark" ? "border-light" : "border-dark"}`}>
+  <div
+    className={`card mt-4 p-3 ${theme === "dark" ? "bg-dark text-white" : ""}`}
+  >
+    <h4 className={theme === "dark" ? "text-light" : "text-primary"}>
+      {selectedContent.title}
+    </h4>
+    <div
+      className={`border rounded p-3 text-start ${
+        theme === "dark" ? "border-light" : "border-dark"
+      }`}
+    >
       {selectedContent.questions?.length > 0 ? (
         selectedContent.questions.map((q, index) => (
           <div key={q.questionId || index} className="mb-3">
-            <h5>{index + 1}. {q.question}</h5>
+            <h5>
+              {index + 1}. {q.question}
+            </h5>
             <div className="d-flex flex-column">
               {Object.entries(q.answers).map(([key, answerText]) => {
                 const isSelected = q.selectedAnswers.includes(key);
@@ -160,9 +202,23 @@ const ResultDetails = ({ selectedContent, theme }) => (
 
                 return (
                   <div key={key} className="form-check mt-2">
-                    <input type="checkbox" className="form-check-input" disabled checked={isSelected} />
-                    <label className={`ms-2 ${isSelected ? (isCorrect ? "text-success" : "text-danger") : ""}`}>
-                      {key}) {answerText} {isSelected ? (isCorrect ? "✅" : "❌") : ""}
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      disabled
+                      checked={isSelected}
+                    />
+                    <label
+                      className={`ms-2 ${
+                        isSelected
+                          ? isCorrect
+                            ? "text-success"
+                            : "text-danger"
+                          : ""
+                      }`}
+                    >
+                      {key}) {answerText}{" "}
+                      {isSelected ? (isCorrect ? "✅" : "❌") : ""}
                     </label>
                   </div>
                 );
@@ -171,7 +227,9 @@ const ResultDetails = ({ selectedContent, theme }) => (
           </div>
         ))
       ) : (
-        <p className={theme === "dark" ? "text-light" : "text-muted"}>No questions available.</p>
+        <p className={theme === "dark" ? "text-light" : "text-muted"}>
+          No questions available.
+        </p>
       )}
     </div>
   </div>

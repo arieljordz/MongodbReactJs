@@ -7,8 +7,7 @@ import { useTheme } from "../customPages/ThemeContext";
 const AllResultPage = () => {
   const { theme } = useTheme();
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
-  const [results, setResults] = useState({});
-  const [selectedContent, setSelectedContent] = useState(null);
+  const [results, setResults] = useState([]);
 
   useEffect(() => {
     fetchProgress();
@@ -16,27 +15,16 @@ const AllResultPage = () => {
 
   const fetchProgress = async () => {
     try {
-      // Validate studentData before API call
-      if (!studentData?._id || !studentData?.category) {
-        console.warn("Student data is missing.");
-        return;
-      }
-
-      // Fetch progress from database
       const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${true}`
+        `http://localhost:3001/getAllResults/${studentData.category}/${true}`
       );
-
-      console.log("Fetched response:", response);
-
-      if (response.data && response.data.progress) {
-        localStorage.setItem("progress", JSON.stringify(response.data));
-        setResults(formatProgressData(response.data.progress));
-
-        console.log("Fetched and saved progress:", response.data);
-        console.log("Formatted progress:", formatProgressData(response.data.progress));
+      console.log("response data:", response);
+      if (response.data) {
+        const formattedData = formatProgressData(response.data);
+        console.log("Formatted Progress Data:", formattedData);
+        setResults(formattedData);
       } else {
-        console.warn("No progress found in DB.");
+        console.warn("No progress found.");
       }
     } catch (error) {
       console.error("Error fetching progress:", error);
@@ -44,137 +32,156 @@ const AllResultPage = () => {
     }
   };
 
-  // Function to format progress data
-  const formatProgressData = (progressData) =>
-    progressData.map(({ contentId, answeredQuestions }) => ({
-      contentId: contentId?._id,
-      title: contentId?.title || "Unknown Title",
-      totalCount: answeredQuestions.length,
-      correctCount: answeredQuestions.filter((q) => q.isCorrect).length,
-      percentage:
-        answeredQuestions.length > 0
-          ? Math.round(
-              (answeredQuestions.filter((q) => q.isCorrect).length / answeredQuestions.length) * 100
-            )
-          : 0,
-      questions: answeredQuestions.map((q) => ({
-        questionId: q.questionId?._id,
-        question: q.questionId?.question || "No question available",
-        answers: {
-          A: q.questionId?.answerA,
-          B: q.questionId?.answerB,
-          C: q.questionId?.answerC,
-          D: q.questionId?.answerD,
-        },
-        correctAnswers: {
-          A: q.questionId?.answerACheck,
-          B: q.questionId?.answerBCheck,
-          C: q.questionId?.answerCCheck,
-          D: q.questionId?.answerDCheck,
-        },
-        selectedAnswers: q.selectedAnswers,
-        isCorrect: q.isCorrect,
-      })),
-    }));
+  const formatProgressData = (data) => {
+    const groupedResults = {};
+
+    data.forEach(({ studentId, progress }) => {
+      const studentKey = studentId._id;
+      if (!groupedResults[studentKey]) {
+        groupedResults[studentKey] = {
+          studentId: studentId._id,
+          studentName: `${studentId.firstname} ${studentId.middlename} ${studentId.lastname}`,
+          contents: [],
+        };
+      }
+
+      progress.forEach(({ contentId, answeredQuestions }) => {
+        const totalCount = answeredQuestions.length;
+        const correctCount = answeredQuestions.filter(
+          (q) => q.isCorrect
+        ).length;
+        const percentage =
+          totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+        const status =
+          totalCount > 0
+            ? correctCount / totalCount >= 0.75
+              ? "Passed"
+              : "Failed"
+            : "No Data";
+
+        groupedResults[studentKey].contents.push({
+          contentId: contentId._id,
+          contentTitle: contentId.title,
+          totalCount,
+          correctCount,
+          percentage,
+          status,
+        });
+      });
+    });
+
+    return Object.values(groupedResults);
+  };
 
   return (
     <div className={`container mt-6 ${theme}`}>
-      <div className="content-header">
-        <div className="d-flex justify-content-start">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item"><a className="text-blue">Home</a></li>
-              <li className="breadcrumb-item"><a className="text-blue">Results</a></li>
-            </ol>
-          </nav>
+      <Header />
+      <div
+        className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
+      >
+        <div
+          className={`card-header ${
+            theme === "dark"
+              ? "bg-success-dark-mode text-white"
+              : "bg-success text-white"
+          } py-3 d-flex justify-content-start`}
+        >
+          <h2 className="card-title font-weight-bold m-0">🎯 Results!</h2>
         </div>
-      </div>
-      <div className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}>
-        <div className={`card-header ${theme === "dark" ? "bg-success-dark-mode text-white" : "bg-success text-white"}`}>
-          <h2 className="card-title font-weight-bold">🎯 Results!</h2>
-        </div>
-        <div className={`card-body ${theme === "dark" ? "dark-mode text-white" : ""}`}>
-          {results.length > 0 ? (
-            <ResultsTable results={results} setSelectedContent={setSelectedContent} theme={theme} />
-          ) : (
-            <p className="text-center text-muted">No results available.</p>
-          )}
-          {selectedContent && <ResultDetails selectedContent={selectedContent} theme={theme} />}
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
+          <ProgressTable progressData={results} />
         </div>
       </div>
     </div>
   );
 };
 
-const ResultsTable = ({ results, setSelectedContent, theme }) => (
-  <div className="table-responsive">
-    <table className="table table-striped table-bordered">
-      <thead className={theme === "dark" ? "table-dark" : "table-light"}>
-        <tr>
-          <th>#</th>
-          <th>Title</th>
-          <th>Total Items</th>
-          <th>Score</th>
-          <th>Percentage</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {results.map((result, index) => (
-          <tr key={result.contentId}>
-            <td>{index + 1}</td>
-            <td>{result.title}</td>
-            <td>{result.totalCount}</td>
-            <td>{result.correctCount}</td>
-            <td>{result.percentage}%</td>
-            <td>
-              <span className={`badge ${result.percentage >= 75 ? "bg-success" : "bg-danger"}`}>
-                {result.percentage >= 75 ? "Passed" : "Failed"}
-              </span>
-            </td>
-            <td>
-              <button className="btn btn-primary btn-sm" onClick={() => setSelectedContent(result)}>
-                See Details
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-const ResultDetails = ({ selectedContent, theme }) => (
-  <div className={`card mt-4 p-3 ${theme === "dark" ? "bg-dark text-white" : ""}`}>
-    <h4 className={theme === "dark" ? "text-light" : "text-primary"}>{selectedContent.title}</h4>
-    <div className={`border rounded p-3 text-start ${theme === "dark" ? "border-light" : "border-dark"}`}>
-      {selectedContent.questions?.length > 0 ? (
-        selectedContent.questions.map((q, index) => (
-          <div key={q.questionId || index} className="mb-3">
-            <h5>{index + 1}. {q.question}</h5>
-            <div className="d-flex flex-column">
-              {Object.entries(q.answers).map(([key, answerText]) => {
-                const isSelected = q.selectedAnswers.includes(key);
-                const isCorrect = q.correctAnswers[key];
-
-                return (
-                  <div key={key} className="form-check mt-2">
-                    <input type="checkbox" className="form-check-input" disabled checked={isSelected} />
-                    <label className={`ms-2 ${isSelected ? (isCorrect ? "text-success" : "text-danger") : ""}`}>
-                      {key}) {answerText} {isSelected ? (isCorrect ? "✅" : "❌") : ""}
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))
-      ) : (
-        <p className={theme === "dark" ? "text-light" : "text-muted"}>No questions available.</p>
-      )}
+const Header = () => (
+  <div className="content-header">
+    <div className="d-flex justify-content-start">
+      <nav aria-label="breadcrumb">
+        <ol className="breadcrumb">
+          <li className="breadcrumb-item">
+            <a children="text-blue">Home</a>
+          </li>
+          <li className="breadcrumb-item">
+            <a children="text-blue">Results</a>
+          </li>
+        </ol>
+      </nav>
     </div>
   </div>
 );
+
+const ProgressTable = ({ progressData }) => {
+  const [expanded, setExpanded] = useState({});
+
+  const toggleExpand = (studentId) => {
+    setExpanded((prev) => ({ ...prev, [studentId]: !prev[studentId] }));
+  };
+
+  return (
+    <div className="accordion" id="resultsAccordion">
+      {progressData.map((student) => (
+        <div className="card mb-2" key={student.studentId}>
+          <div
+            className="card-header d-flex align-items-center"
+            onClick={() => toggleExpand(student.studentId)}
+            style={{ cursor: "pointer" }}
+          >
+            <h5 className="mb-0">{student.studentName}</h5>
+            <i
+              className={`fas ${
+                expanded[student.studentId]
+                  ? "fa-chevron-up"
+                  : "fa-chevron-down"
+              } ms-auto`}
+            />
+          </div>
+          {expanded[student.studentId] && (
+            <div className="card-body">
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Content Title</th>
+                    <th>Total Items</th>
+                    <th>Correct Answers</th>
+                    <th>Percentage</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {student.contents.map((content) => (
+                    <tr key={content.contentId}>
+                      <td>{content.contentTitle}</td>
+                      <td>{content.totalCount}</td>
+                      <td>{content.correctCount}</td>
+                      <td>{content.percentage}%</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            content.status === "Passed"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
+                        >
+                          {content.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default AllResultPage;

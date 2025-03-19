@@ -29,6 +29,7 @@ mongoose
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+// Person End Points
 app.post("/createPerson", async (req, res) => {
   try {
     const newPerson = await PersonModel.create(req.body);
@@ -114,6 +115,7 @@ app.delete("/deletePerson/:id", async (req, res) => {
   }
 });
 
+// Content End Points
 app.post("/createContent", async (req, res) => {
   try {
     const newContent = await ContentModel.create(req.body);
@@ -194,6 +196,7 @@ app.delete("/deleteContent/:id", async (req, res) => {
   }
 });
 
+// Question End Points
 app.post("/createQuestionByContent", async (req, res) => {
   try {
     const { question, ...otherData } = req.body;
@@ -346,43 +349,6 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting question", error: error.message });
-  }
-});
-
-app.post("/saveAnswerByQuestion", async (req, res) => {
-  try {
-    const {
-      studentId,
-      contentId,
-      questionId,
-      selectedAnswers,
-      isCorrect,
-      isPartiallyCorrect,
-    } = req.body;
-
-    if (!studentId || !contentId || !questionId || !selectedAnswers) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const newAnswer = new AnswerModel({
-      studentId,
-      contentId,
-      questionId,
-      selectedAnswers,
-      isCorrect,
-      isPartiallyCorrect,
-      dateSubmitted: new Date(),
-    });
-
-    await newAnswer.save();
-    res
-      .status(201)
-      .json({ message: "Answer saved successfully", data: newAnswer });
-  } catch (error) {
-    console.error("Error saving answer:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating answer", error: error.message });
   }
 });
 
@@ -596,6 +562,31 @@ app.put("/updateTimeLeft/:progressId", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// ✅ Get All Results
+app.get("/getAllResults/:category/:isDone", async (req, res) => {
+  try {
+    const { category, isDone } = req.params;
+    const isDoneBoolean = isDone === "true"; // Convert string to boolean
+
+    console.log("Fetching progress for:", { category, isDoneBoolean });
+
+    // Fetch all progress documents that match the given category and isDone status
+    const progressRecords = await ProgressModel.find({ category, isDone: isDoneBoolean })
+      .populate("studentId", "firstname middlename lastname email") // Populate student details
+      .populate("progress.contentId")
+      .populate("progress.answeredQuestions.questionId")
+      .exec();
+
+    console.log("Progress records fetched:", progressRecords);
+
+    res.json(progressRecords);
+  } catch (error) {
+    console.error("Error fetching progress records:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 
 // Start Server
