@@ -17,17 +17,19 @@ const Timer = ({ duration, onTimeUp, updateTimeLeft }) => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
           clearInterval(timer);
-          onTimeUp();
+          onTimeUp(); // ✅ Calls parent callback, but only once
           return 0;
         }
-        const newTime = prevTime - 1;
-        updateTimeLeft(newTime); // ✅ Send updated time to parent every second
-        return newTime;
+        return prevTime - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer); // ✅ Cleanup on unmount
-  }, [timeLeft, onTimeUp]);
+    return () => clearInterval(timer);
+  }, []); // ✅ Run only once when the component mounts
+
+  useEffect(() => {
+    updateTimeLeft(timeLeft); // ✅ Send updated time to parent
+  }, [timeLeft, updateTimeLeft]); // ✅ Only when `timeLeft` changes
 
   // Format time (MM:SS)
   const formatTime = (seconds) => {
@@ -38,7 +40,7 @@ const Timer = ({ duration, onTimeUp, updateTimeLeft }) => {
 
   return (
     <h5 className="text-danger d-flex justify-content-end">
-      Time Left: {formatTime(timeLeft)}
+      Time Left ⏳: {formatTime(timeLeft)}
     </h5>
   );
 };

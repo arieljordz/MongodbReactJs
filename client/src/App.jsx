@@ -17,7 +17,7 @@ function App() {
     <ThemeProvider>
       <GoogleOAuthProvider clientId={clientId}>
         <BrowserRouter>
-          <ToastContainer />
+        <ToastContainer position="top-right" autoClose={2000} />
           <Layout />
         </BrowserRouter>
       </GoogleOAuthProvider>

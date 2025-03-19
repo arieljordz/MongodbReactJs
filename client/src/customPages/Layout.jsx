@@ -14,7 +14,6 @@ import HomePage from "../pages/HomePage";
 import ExercisesPage from "../pages/ExercisesPage";
 import ResultPage from "../pages/ResultPage";
 import AllResultPage from "../pages/AllResultPage";
-import CongratsPage from "../pages/CongratsPage";
 import AccountPage from "../pages/AccountPage";
 import QuestionPage from "../pages/QuestionPage";
 import AppSettingsPage from "../pages/AppSettingsPage";
@@ -26,7 +25,6 @@ import PreventBackNavigation from "../customPages/PreventBackNavigation";
 const studentFlow = [
   "/student/home",
   "/student/exercises",
-  "/student/congrats",
   "/student/results",
 ];
 const teacherFlow = [
@@ -62,9 +60,14 @@ const Layout = () => {
     if (studentData?.userType) {
       const flow = getAllowedFlow(studentData.userType);
       const savedPath = localStorage.getItem("allowedPath");
+      // const progress = localStorage.getItem("progress");
+  
+      // console.log("studentData: ", studentData);
+      // console.log("progress: ", progress);
+      // console.log("savedPath: ", savedPath);
 
       if (!savedPath || flow.indexOf(savedPath) === -1) {
-        console.log("Resetting allowedPath to first step");
+        console.log("Resetting allowedPath to first step", flow[0]);
         setAllowedPath(flow[0]);
         localStorage.setItem("allowedPath", flow[0]);
       }
@@ -179,15 +182,6 @@ const Layout = () => {
             path="/student/results"
             element={
               <ResultPage
-                moveToNextStep={moveToNextStep}
-                allowedPath={allowedPath}
-              />
-            }
-          />
-          <Route
-            path="/student/congrats"
-            element={
-              <CongratsPage
                 moveToNextStep={moveToNextStep}
                 allowedPath={allowedPath}
               />

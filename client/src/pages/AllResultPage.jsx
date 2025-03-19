@@ -2,63 +2,80 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
-function AllResultPage({ moveToNextStep, allowedPath }) {
-  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+const AllResultPage = () => {
   const { theme } = useTheme();
-  const [results, setResults] = useState([]);
+  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+  const [results, setResults] = useState({});
   const [selectedContent, setSelectedContent] = useState(null);
-  const studentId = studentData._id;
-  // console.log("AllResultPage: ", studentData);
-
-  const getExerciseResults = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/getExerciseResults/${studentId}`
-      );
-      setResults(response.data);
-      console.log("Results Response:", response.data);
-    } catch (error) {
-      console.error("Error fetching exercise results:", error);
-
-      if (error.response) {
-        return { error: error.response.data.message }; // Return API error message
-      }
-      return { error: "Network error or server unavailable" };
-    }
-  };
-
-  const getContentWithQuestions = async (contentId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/getContentWithQuestions/${contentId}`
-      );
-
-      setSelectedContent(response.data);
-      console.log("ShowDetails Response:", response.data);
-    } catch (error) {
-      console.error("Error fetching content details:", error);
-    }
-  };
-
-  const handleShowDetails = async (contentId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/getStudentsAnswer/${contentId}/${studentId}`
-      );
-
-      setSelectedContent(response.data);
-      console.log("ShowDetails Response:", response.data);
-    } catch (error) {
-      console.error("Error fetching content details:", error);
-    }
-  };
 
   useEffect(() => {
-    getExerciseResults();
+    fetchProgress();
   }, []);
+
+  const fetchProgress = async () => {
+    try {
+      // Validate studentData before API call
+      if (!studentData?._id || !studentData?.category) {
+        console.warn("Student data is missing.");
+        return;
+      }
+
+      // Fetch progress from database
+      const response = await axios.get(
+        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${true}`
+      );
+
+      console.log("Fetched response:", response);
+
+      if (response.data && response.data.progress) {
+        localStorage.setItem("progress", JSON.stringify(response.data));
+        setResults(formatProgressData(response.data.progress));
+
+        console.log("Fetched and saved progress:", response.data);
+        console.log("Formatted progress:", formatProgressData(response.data.progress));
+      } else {
+        console.warn("No progress found in DB.");
+      }
+    } catch (error) {
+      console.error("Error fetching progress:", error);
+      toast.error("Failed to load progress.");
+    }
+  };
+
+  // Function to format progress data
+  const formatProgressData = (progressData) =>
+    progressData.map(({ contentId, answeredQuestions }) => ({
+      contentId: contentId?._id,
+      title: contentId?.title || "Unknown Title",
+      totalCount: answeredQuestions.length,
+      correctCount: answeredQuestions.filter((q) => q.isCorrect).length,
+      percentage:
+        answeredQuestions.length > 0
+          ? Math.round(
+              (answeredQuestions.filter((q) => q.isCorrect).length / answeredQuestions.length) * 100
+            )
+          : 0,
+      questions: answeredQuestions.map((q) => ({
+        questionId: q.questionId?._id,
+        question: q.questionId?.question || "No question available",
+        answers: {
+          A: q.questionId?.answerA,
+          B: q.questionId?.answerB,
+          C: q.questionId?.answerC,
+          D: q.questionId?.answerD,
+        },
+        correctAnswers: {
+          A: q.questionId?.answerACheck,
+          B: q.questionId?.answerBCheck,
+          C: q.questionId?.answerCCheck,
+          D: q.questionId?.answerDCheck,
+        },
+        selectedAnswers: q.selectedAnswers,
+        isCorrect: q.isCorrect,
+      })),
+    }));
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -66,184 +83,98 @@ function AllResultPage({ moveToNextStep, allowedPath }) {
         <div className="d-flex justify-content-start">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a children="text-blue">Home</a>
-              </li>
-              <li className="breadcrumb-item">
-                <a children="text-blue">Results</a>
-              </li>
+              <li className="breadcrumb-item"><a className="text-blue">Home</a></li>
+              <li className="breadcrumb-item"><a className="text-blue">Results</a></li>
             </ol>
           </nav>
         </div>
       </div>
-
-      <div
-        className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
-      >
-        {/* Card Header */}
-        <div
-          className={`card-header ${
-            theme === "dark"
-              ? "bg-success-dark-mode text-white"
-              : "bg-success text-white"
-          } py-3 d-flex justify-content-center`}
-        >
-          <h2 className="card-title font-weight-bold m-0">🎯 Results!</h2>
+      <div className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}>
+        <div className={`card-header ${theme === "dark" ? "bg-success-dark-mode text-white" : "bg-success text-white"}`}>
+          <h2 className="card-title font-weight-bold">🎯 Results!</h2>
         </div>
-
-        {/* Card Body */}
-        <div
-          className={`card-body ${
-            theme === "dark" ? "dark-mode text-white" : ""
-          }`}
-        >
+        <div className={`card-body ${theme === "dark" ? "dark-mode text-white" : ""}`}>
           {results.length > 0 ? (
-            <>
-              <div className="table-responsive">
-                {/* Main Results Table */}
-                <table className="table table-striped table-bordered">
-                  <thead
-                    className={theme === "dark" ? "table-dark" : "table-light"}
-                  >
-                    <tr>
-                      <th>#</th>
-                      <th>Title</th>
-                      <th>Total Items</th>
-                      <th>Score</th>
-                      <th>Percentage</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((result, index) => {
-                      const percentage = Math.round(
-                        (result.correctCount / result.totalCount) * 100
-                      );
-
-                      return (
-                        <tr key={index}>
-                          <td>{index + 1}</td>
-                          <td>{result.title}</td>
-                          <td>{result.totalCount}</td>
-                          <td>{result.correctCount}</td>
-                          <td>{percentage}%</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                percentage >= 75 ? "bg-success" : "bg-danger"
-                              }`}
-                            >
-                              {percentage >= 75 ? "Passed" : "Failed"}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              className="btn btn-info btn-sm"
-                              onClick={() =>
-                                handleShowDetails(result.contentId)
-                              }
-                            >
-                              See Details
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Display Question */}
-              <div
-                className={`card mt-4 p-3 ${
-                  theme === "dark" ? "bg-dark text-white" : ""
-                }`}
-              >
-                <h4
-                  className={`${
-                    theme === "dark" ? "text-light" : "text-primary"
-                  }`}
-                >
-                  {selectedContent?.title}
-                </h4>
-                {selectedContent ? (
-                  <div
-                    className={`border rounded p-3 text-start ${
-                      theme === "dark" ? "border-light" : "border-dark"
-                    }`}
-                  >
-                    {selectedContent.questions.map((q, index) => {
-                      return (
-                        <div key={q.id} className="mb-3">
-                          {/* Question aligned to the left */}
-                          <h5>
-                            {index + 1}. {q.question}
-                          </h5>
-
-                          {/* Answers aligned to the left */}
-                          <div className="d-flex flex-column">
-                            {["A", "B", "C", "D"].map((option) => {
-                              // Check if the student selected this option
-                              const isSelected = Array.isArray(
-                                q.studentSelectedAnswers
-                              )
-                                ? q.studentSelectedAnswers.includes(option)
-                                : false;
-
-                              // Check if this option is the correct answer
-                              const isCorrect = q[`answer${option}Check`];
-
-                              return (
-                                <div key={option} className="form-check mt-2">
-                                  <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    disabled
-                                    checked={isSelected}
-                                  />
-                                  <label
-                                    className={`ms-2 ${
-                                      isSelected
-                                        ? isCorrect
-                                          ? "text-success"
-                                          : "text-danger"
-                                        : ""
-                                    }`}
-                                  >
-                                    {option}) {q[`answer${option}`]}{" "}
-                                    {isSelected
-                                      ? isCorrect
-                                        ? "✅"
-                                        : "❌"
-                                      : ""}
-                                  </label>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p
-                    className={`${
-                      theme === "dark" ? "text-light" : "text-muted"
-                    }`}
-                  >
-                    No question available.
-                  </p>
-                )}
-              </div>
-            </>
+            <ResultsTable results={results} setSelectedContent={setSelectedContent} theme={theme} />
           ) : (
-            <div className="text-center text-muted">No results available.</div>
+            <p className="text-center text-muted">No results available.</p>
           )}
+          {selectedContent && <ResultDetails selectedContent={selectedContent} theme={theme} />}
         </div>
       </div>
     </div>
   );
-}
+};
+
+const ResultsTable = ({ results, setSelectedContent, theme }) => (
+  <div className="table-responsive">
+    <table className="table table-striped table-bordered">
+      <thead className={theme === "dark" ? "table-dark" : "table-light"}>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Total Items</th>
+          <th>Score</th>
+          <th>Percentage</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {results.map((result, index) => (
+          <tr key={result.contentId}>
+            <td>{index + 1}</td>
+            <td>{result.title}</td>
+            <td>{result.totalCount}</td>
+            <td>{result.correctCount}</td>
+            <td>{result.percentage}%</td>
+            <td>
+              <span className={`badge ${result.percentage >= 75 ? "bg-success" : "bg-danger"}`}>
+                {result.percentage >= 75 ? "Passed" : "Failed"}
+              </span>
+            </td>
+            <td>
+              <button className="btn btn-primary btn-sm" onClick={() => setSelectedContent(result)}>
+                See Details
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const ResultDetails = ({ selectedContent, theme }) => (
+  <div className={`card mt-4 p-3 ${theme === "dark" ? "bg-dark text-white" : ""}`}>
+    <h4 className={theme === "dark" ? "text-light" : "text-primary"}>{selectedContent.title}</h4>
+    <div className={`border rounded p-3 text-start ${theme === "dark" ? "border-light" : "border-dark"}`}>
+      {selectedContent.questions?.length > 0 ? (
+        selectedContent.questions.map((q, index) => (
+          <div key={q.questionId || index} className="mb-3">
+            <h5>{index + 1}. {q.question}</h5>
+            <div className="d-flex flex-column">
+              {Object.entries(q.answers).map(([key, answerText]) => {
+                const isSelected = q.selectedAnswers.includes(key);
+                const isCorrect = q.correctAnswers[key];
+
+                return (
+                  <div key={key} className="form-check mt-2">
+                    <input type="checkbox" className="form-check-input" disabled checked={isSelected} />
+                    <label className={`ms-2 ${isSelected ? (isCorrect ? "text-success" : "text-danger") : ""}`}>
+                      {key}) {answerText} {isSelected ? (isCorrect ? "✅" : "❌") : ""}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className={theme === "dark" ? "text-light" : "text-muted"}>No questions available.</p>
+      )}
+    </div>
+  </div>
+);
 
 export default AllResultPage;

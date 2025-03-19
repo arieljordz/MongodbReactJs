@@ -8,58 +8,96 @@ function HomePage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const [contents, setContents] = useState([]);
+  const [progress, setProgress] = useState(null);
+  const [progressExist, setProgressExist] = useState(false);
 
-  // console.log("HomePage: ", studentData);
+  // console.log("HomePage: ", allowedPath);
+  // console.log("studentData: ", studentData);
+  // console.log("progress: ", progress);
 
   useEffect(() => {
-    const fetchContents = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:3001/getContents/all"
-        );
-        if (response.data.length > 0) {
-          setContents(response.data);
-        } else {
-          console.warn("No contents available.");
-        }
-      } catch (error) {
-        console.error("Error fetching contents:", error);
-      }
-    };
-
-    fetchContents();
+    fetchProgress();
   }, []);
 
-  // Shuffle function to randomize content order
-  const shuffleArray = (array) => {
-    return array.sort(() => Math.random() - 0.5);
+  const fetchData = async (isDone) => {
+    const response = await axios.get(
+      `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${isDone}`
+    );
+    return response.data || null;
   };
 
-  const handleStartExercises = async () => {
-    if (!studentData?._id || !studentData?.category) {
+  const fetchProgress = async () => {
+    try {
+      let progressData = await fetchData(false);
+
+      console.log("Fetched not yet done progress:", progressData);
+
+      if (!progressData) {
+        progressData = await fetchData(true);
+        console.log("Fetched done progress:", progressData);
+        if (progressData) {
+          setProgressExist(true);
+        }
+      }
+
+      setProgress(progressData);
+    } catch (error) {
+      console.error("Error fetching progress:", error);
+    }
+  };
+
+  const createProgress = async (studentId, category) => {
+    if (!studentId || !category) {
       console.error("Error: Missing studentId or category");
-      return;
+      return null; // ✅ Early return if invalid
     }
 
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}`
+      const response = await axios.post(
+        "http://localhost:3001/createProgress",
+        {
+          studentId, // ✅ Send in the request body
+          category,
+        }
       );
 
-      // Axios automatically parses JSON, no need for `response.json()`
-      console.log("Student Progress:", response.data);
-
-      // Move to next step only if progress data is available
-      if (response.data) {
-        moveToNextStep();
-        navigate("/student/exercises");
-      }
+      console.log("Created New Student Progress:", response.data);
+      return response.data; // ✅ Return progress data
     } catch (error) {
-      console.error(
-        "Error fetching progress:",
-        error.response?.data || error.message
-      );
+      console.error("Error creating progress:", error);
+      if (error.response?.status === 400) {
+        fetchProgress();
+      }
+      return null;
+    }
+  };
+
+  const handleStartExercises = async () => {
+    try {
+      if (progressExist) {
+        console.log("Progress already exists:", progressExist);
+        moveToNextStep();
+        navigate("/student/results");
+      }
+
+      if (!progress) {
+        // ✅ Create progress if it doesn't exist
+        const newProgress = await createProgress(
+          studentData?._id,
+          studentData?.category
+        );
+        if (newProgress) {
+          setProgress(newProgress);
+          console.log("Created and started new progress:", newProgress);
+        }
+      } else {
+        console.log("Starting existing progress:", progress);
+      }
+
+      moveToNextStep();
+      navigate("/student/exercises");
+    } catch (error) {
+      console.error("Error starting exercises:", error);
     }
   };
 
@@ -120,11 +158,12 @@ function HomePage({ moveToNextStep, allowedPath }) {
           <button
             className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
             onClick={handleStartExercises}
-            disabled={contents.length === 0}
           >
-            {contents.length > 0
-              ? "Start Your Test 📚"
-              : "Preparing Your Test..."}
+            {progressExist
+              ? "Preview Exercises 📚"
+              : progress
+              ? "Continue Your Test 📚"
+              : "Start Your Test 📚"}
           </button>
         </div>
       </div>

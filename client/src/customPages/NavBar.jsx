@@ -13,7 +13,11 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
     console.log("User logged out! Implement logout logic here.");
     localStorage.removeItem("user");
     localStorage.removeItem("allowedPath");
-    localStorage.removeItem("progress");
+    // localStorage.removeItem("progress");
+
+    // let path = studentData?.userType = "student"?"/student/home":"/admin/results";
+    localStorage.setItem("allowedPath", "/student/home");
+    // moveToNextStep();
     window.location.href = "/";
   };
 

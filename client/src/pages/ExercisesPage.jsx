@@ -13,38 +13,31 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
   const totalTime = 10 * 60;
   const [timeLeft, setTimeLeft] = useState(totalTime);
   const [progress, setProgress] = useState(null);
+  const [progressExist, setProgressExist] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState([]);
 
+  // const [currentContent, setcurrentContent] = useState(null);
+  // const [currentQuestion, setcurrentQuestion] = useState(null);
+  const [isLastQuestionInTopic, setIsLastQuestionInTopic] = useState(false);
+  const [isLastTopic, setIsLastTopic] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+
+  // ✅ Restore `timeLeft` from localStorage on page refresh
   useEffect(() => {
     fetchProgress();
+    if (timeLeft) {
+      setTimeLeft(parseInt(timeLeft, 10));
+    }
   }, []);
 
-  const fetchProgress = async () => {
-    try {
-      const storedProgress = JSON.parse(localStorage.getItem("progress"));
-      if (storedProgress) {
-        setProgress(storedProgress);
-        setCurrentContentIndex(storedProgress.currentContentIndex || 0);
-        setCurrentQuestionIndex(storedProgress.currentQuestionIndex || 0);
-        setTimeLeft(storedProgress.timeLeft || totalTime); // ✅ Restore timeLeft
-        console.log("Restored progress from localStorage:", storedProgress);
-        return;
-      }
-
-      const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}`
-      );
-
-      setProgress(response.data);
-      setTimeLeft(response.data.timeLeft || totalTime); // ✅ Set timeLeft from API
-      localStorage.setItem("progress", JSON.stringify(response.data));
-      console.log("Fetched and saved progress:", response.data);
-    } catch (error) {
-      console.error("Error fetching progress:", error);
-      toast.error("Failed to load progress.");
-    }
+  const handleCheckboxChange = (answer) => {
+    setSelectedAnswers((prev) =>
+      prev.includes(answer)
+        ? prev.filter((a) => a !== answer)
+        : [...prev, answer]
+    );
   };
 
   const handleTimeUp = () => {
@@ -55,37 +48,84 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
   // ✅ Function to update `timeLeft` from Timer every second
   const handleTimeUpdate = (newTime) => {
     setTimeLeft(newTime);
-    localStorage.setItem("timeLeft", newTime); // ✅ Save timeLeft periodically
-  };
 
-  // ✅ Restore `timeLeft` from localStorage on page refresh
-  useEffect(() => {
-    const savedTimeLeft = localStorage.getItem("timeLeft");
-    if (savedTimeLeft) {
-      setTimeLeft(parseInt(savedTimeLeft, 10));
+    // ✅ Update only every 30 seconds to prevent excessive API calls
+    if (Date.now() - lastUpdateTime >= 30000) {
+      updateTimeLeft(newTime);
+      setLastUpdateTime(Date.now());
     }
-  }, []);
-
-  useEffect(() => {
-    const saveTimeToAPI = setInterval(async () => {
-      try {
-        await axios.put(`http://localhost:3001/updateTime/${progress._id}`, { timeLeft });
-      } catch (error) {
-        console.error("Error updating time:", error);
-      }
-    }, 10000); // ✅ Update API every 10 seconds
-  
-    return () => clearInterval(saveTimeToAPI); // ✅ Cleanup on unmount
-  }, [timeLeft]);
-
-  const handleCheckboxChange = (answer) => {
-    setSelectedAnswers((prev) =>
-      prev.includes(answer)
-        ? prev.filter((a) => a !== answer)
-        : [...prev, answer]
-    );
   };
 
+  // ✅ Function to update time in the database
+  const updateTimeLeft = async (newTime) => {
+    // console.log("newTimeleft:", newTime);
+    try {
+      await axios.put(`http://localhost:3001/updateTimeLeft/${progress._id}`, {
+        timeLeft: newTime,
+      });
+    } catch (error) {
+      console.error("Failed to update timeLeft:", error);
+    }
+  };
+
+  const fetchData = async (isDone) => {
+    const response = await axios.get(
+      `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${isDone}`
+    );
+    return response.data || null;
+  };
+
+  const fetchProgress = async () => {
+    try {
+      let progressData = await fetchData(false);
+
+      console.log("Fetched not yet done progress:", progressData);
+
+      if (!progressData) {
+        progressData = await fetchData(true);
+        console.log("Fetched done progress:", progressData);
+        setProgressExist(true);
+      }
+
+      setProgress(progressData);
+      setTimeLeft(progressData?.timeLeft || timeLeft);
+
+      if (progressData?.progress?.length > 0) {
+        const { topicIndex, questionIndex } = findNextUnansweredQuestion(
+          progressData.progress
+        );
+
+        setCurrentContentIndex(topicIndex);
+        setCurrentQuestionIndex(questionIndex);
+      } else {
+        setCurrentContentIndex(0);
+        setCurrentQuestionIndex(0);
+      }
+    } catch (error) {
+      console.error("Error fetching progress:", error);
+    }
+  };
+
+  // ✅ Finds the next unanswered question across topics
+  const findNextUnansweredQuestion = (progressArray) => {
+    for (let topicIndex = 0; topicIndex < progressArray.length; topicIndex++) {
+      const topic = progressArray[topicIndex];
+
+      if (!topic?.answeredQuestions) continue;
+
+      const unansweredIndex = topic.answeredQuestions.findIndex(
+        (q) => !q.isDone
+      );
+
+      if (unansweredIndex !== -1) {
+        return { topicIndex, questionIndex: unansweredIndex };
+      }
+    }
+
+    return { topicIndex: 0, questionIndex: 0 }; // Default to first question if all are answered
+  };
+
+  // ✅ Handles answer submission and moves to the next unanswered question
   const handleSubmitAnswer = async () => {
     if (!progress) return;
 
@@ -94,68 +134,70 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
       return;
     }
 
-    const updatedProgress = { ...progress };
-    const currentContent = updatedProgress.progress[currentContentIndex];
-    const currentQuestion =
-      currentContent.answeredQuestions[currentQuestionIndex];
+    const updatedProgress = JSON.parse(JSON.stringify(progress));
 
+    const currentContent = updatedProgress.progress?.[currentContentIndex];
+    const currentQuestion =
+      currentContent?.answeredQuestions?.[currentQuestionIndex];
+
+    if (!currentContent || !currentQuestion) return;
+
+    // ✅ Mark question as done and save selected answers
     currentQuestion.isDone = true;
     currentQuestion.selectedAnswers = selectedAnswers;
 
+    // ✅ Check correctness
     const correctAnswers = ["A", "B", "C", "D"].filter(
-      (ans) => currentQuestion.questionId[`answer${ans}Check`]
+      (ans) => currentQuestion.questionId?.[`answer${ans}Check`]
     );
 
-    console.log("currentQuestion: ", currentQuestion.questionId.question);
-    console.log("selectedAnswers: ", selectedAnswers);
-    console.log("correctAnswers:", correctAnswers);
-
-    const isCorrect =
+    currentQuestion.isCorrect =
       selectedAnswers.length === correctAnswers.length &&
       selectedAnswers.every((ans) => correctAnswers.includes(ans));
 
-    const isPartiallyCorrect =
-      selectedAnswers.some((ans) => correctAnswers.includes(ans)) && !isCorrect;
+    currentQuestion.isPartiallyCorrect =
+      selectedAnswers.some((ans) => correctAnswers.includes(ans)) &&
+      !currentQuestion.isCorrect;
 
-    currentQuestion.isCorrect = isCorrect;
-    currentQuestion.isPartiallyCorrect = isPartiallyCorrect;
+    displayResultToast(
+      currentQuestion.isCorrect,
+      currentQuestion.isPartiallyCorrect
+    );
 
-    if (isCorrect) {
-      toast.success("🎉 Correct answer!");
-    } else if (isPartiallyCorrect) {
-      toast.info("⚠️ Partially correct! Some answers are right.");
-    } else {
-      toast.error("❌ Incorrect answer. Try again!");
-    }
+    // ✅ Find the next unanswered question or move to the next topic
+    let { topicIndex, questionIndex } = findNextUnansweredQuestion(
+      updatedProgress.progress
+    );
 
-    setSelectedAnswers([]);
+    const allTopicsDone = updatedProgress.progress.every((topic) =>
+      topic.answeredQuestions.every((question) => question.isDone)
+    );
 
-    // ✅ Move to next question or mark topic as completed
-    if (currentQuestionIndex < currentContent.answeredQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      currentContent.isDone = true;
-      toast.info("🎉 Topic completed! Click 'Next Topic' to continue.");
-    }
-
+    updatedProgress.isDone = allTopicsDone; // ✅ Set global `isDone` flag
+    console.log("allTopicsDone:", allTopicsDone);
     // ✅ Save the remaining time in progress
     updatedProgress.timeLeft = timeLeft;
 
+    // console.log("updatedProgress:", updatedProgress);
     setProgress(updatedProgress);
+    setSelectedAnswers([]);
+    setCurrentContentIndex(topicIndex);
+    setCurrentQuestionIndex(questionIndex);
+    console.log("topicIndex:", topicIndex);
+    // console.log("questionIndex:", questionIndex);
 
-    // ✅ Save progress to localStorage
-    localStorage.setItem(
-      "progress",
-      JSON.stringify({
-        ...updatedProgress,
-        timeLeft,
-        currentContentIndex,
-        currentQuestionIndex:
-          currentQuestionIndex < currentContent.answeredQuestions.length - 1
-            ? currentQuestionIndex + 1
-            : 0,
-      })
-    );
+    // ✅ Determine if this is the last question in the current topic
+    const _currentContent = updatedProgress.progress?.[currentContentIndex];
+    const _isLastQuestionInTopic =
+      _currentContent?.answeredQuestions?.every((q) => q.isDone) ?? false;
+
+    setIsLastQuestionInTopic(_isLastQuestionInTopic);
+    console.log("_isLastQuestionInTopic:", _isLastQuestionInTopic);
+
+    const _isLastTopic =
+      currentContentIndex === updatedProgress.progress.length - 1;
+    setIsLastTopic(_isLastTopic);
+    console.log("_isLastTopic:", _isLastTopic);
 
     try {
       await axios.put(
@@ -168,36 +210,55 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
     }
   };
 
-  const handleNextTopic = () => {
-    if (currentContentIndex < progress.progress.length - 1) {
-      setCurrentContentIndex(currentContentIndex + 1);
-      setCurrentQuestionIndex(0);
+  // ✅ Moves to the next preview topic
+  const handlePreviewNextTopic = (isDone) => {
+    console.log("CurrentContentIndex:", currentContentIndex);
+    setCurrentContentIndex((prevIndex) =>
+      Math.min(prevIndex + 1, progress.progress.length - 1)
+    );
+    setCurrentQuestionIndex(0);
+    setIsLastQuestionInTopic(false);
+    if (isDone) {
+      moveToNextStep();
+      navigate("/student/results");
     }
   };
 
-  const handleFinish = () => {
-    localStorage.removeItem("progress"); // 🔥 Clear saved progress on finish
-    moveToNextStep();
-    toast.success("🎉 You have completed all topics!");
-    navigate("/student/congrats");
+  // ✅ Moves to the next topic
+  const handleNextTopic = () => {
+    setCurrentContentIndex((prevIndex) =>
+      Math.min(prevIndex, progress.progress.length - 1)
+    );
+    setCurrentQuestionIndex(0);
+    setIsLastQuestionInTopic(false);
   };
 
+  // ✅ Finishes the test and navigates to results
+  const handleFinish = () => {
+    moveToNextStep();
+    navigate("/student/results");
+  };
+
+  // ✅ Displays result messages
+  const displayResultToast = (isCorrect, isPartiallyCorrect) => {
+    if (isCorrect) {
+      toast.success("🎉 Correct answer!");
+    } else if (isPartiallyCorrect) {
+      toast.info("⚠️ Partially correct! Some answers are right.");
+    } else {
+      toast.error("❌ Incorrect answer. Try again!");
+    }
+  };
+
+  // ✅ Display loading state if progress is not yet loaded
   if (!progress) return <p>Loading...</p>;
 
-  const currentContent = progress.progress[currentContentIndex] || {};
-
+  const currentContent = progress.progress?.[currentContentIndex];
   const currentQuestion =
-    progress.progress[currentContentIndex]?.answeredQuestions[
-      currentQuestionIndex
-    ];
-
-  const isLastQuestionInTopic =
-    currentContent?.answeredQuestions &&
-    currentContent.answeredQuestions.every((q) => q.isDone);
-
-  const isLastTopic = currentContentIndex === progress.progress.length - 1;
-
-  // console.log("currentContent:", currentContent); // Debugging
+    currentContent?.answeredQuestions?.[currentQuestionIndex];
+  // ✅ Determine if this is the last question in the current topic
+  // const isLastQuestionInTopic = currentContent?.answeredQuestions?.every((q) => q.isDone) ?? false;
+  // const isLastTopic = currentContentIndex === progress.progress.length - 1;
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -227,109 +288,51 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
           </h2>
         </div>
 
-        <div className="d-flex justify-content-end mt-2 me-3">
-          <Timer
-            duration={timeLeft}
-            onTimeUp={handleTimeUp}
-            updateTimeLeft={handleTimeUpdate}
-          />
-        </div>
+        <>
+          {!progressExist ? (
+            <div className="d-flex justify-content-end mt-2 me-3">
+              <Timer
+                duration={timeLeft}
+                onTimeUp={handleTimeUp}
+                updateTimeLeft={handleTimeUpdate}
+              />
+            </div>
+          ) : null}
+        </>
 
         <div
           className={`card-body ${
             theme === "dark" ? "dark-mode text-white" : ""
           }`}
         >
-          <div className="mb-3">
-            <h3 className="text-center">
-              {currentContent.contentId?.title || "Untitled"}
-            </h3>
-            <p
-              className="text-justify"
-              style={{ textAlign: "justify", textIndent: "2em" }}
-              dangerouslySetInnerHTML={{
-                __html: currentContent.contentId?.description,
-              }}
-            ></p>
-
-            {currentContent.contentId?.link && (
-              <p>
-                <strong>Reference:</strong>{" "}
-                <a
-                  href={currentContent.contentId.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {currentContent.contentId.link}
-                </a>
-              </p>
-            )}
-          </div>
-
-          {/* Show Question & Answer only when NOT the last question in the topic */}
-          {!isLastQuestionInTopic && currentQuestion?.questionId ? (
-            <>
-              <div className="mb-3 text-start">
-                <p>
-                  <strong>Question:</strong>{" "}
-                  {currentQuestion.questionId.question}
-                </p>
-              </div>
-
-              <div className="text-start">
-                {["A", "B", "C", "D"].map((option) => {
-                  const answerText =
-                    currentQuestion.questionId[`answer${option}`];
-                  const isChecked = selectedAnswers.includes(option);
-
-                  return (
-                    <div key={option} className="form-check mb-2">
-                      <input
-                        type="checkbox"
-                        id={`answer-${option}`}
-                        className="form-check-input"
-                        checked={isChecked}
-                        onChange={() => handleCheckboxChange(option)}
-                      />
-                      <label
-                        className="form-check-label ms-2 cursor-pointer"
-                        htmlFor={`answer-${option}`}
-                      >
-                        {option}: {answerText}
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : null}
-
-          {/* Show Submit Answer Button until the last question is answered */}
-          {!isLastQuestionInTopic ? (
-            <button
-              className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
-              onClick={handleSubmitAnswer}
-            >
-              🚀 Submit Answer
-            </button>
+          {progressExist ? (
+            <PreviewContents
+              currentContent={currentContent}
+              handlePreviewNextTopic={handlePreviewNextTopic}
+              isLastContent={
+                currentContentIndex === progress.progress.length - 1
+              }
+            />
           ) : (
             <>
-              {/* Show "Next Topic" button if it's NOT the last topic */}
-              {!isLastTopic ? (
-                <button
-                  className="btn btn-success bg-success-dark-mode mt-3 px-4 py-2 rounded-lg shadow-sm"
-                  onClick={handleNextTopic}
-                >
-                  ➡ Next Topic
-                </button>
-              ) : (
-                <button
-                  className="btn btn-success mt-3 px-4 py-2 rounded-lg shadow-sm"
-                  onClick={handleFinish}
-                >
-                  🏆 Finish
-                </button>
-              )}
+              <ContentDisplay
+                currentContent={currentContent}
+                isLastQuestionInTopic={isLastQuestionInTopic}
+                isLastTopic={isLastTopic}
+              />
+              <QuestionDisplay
+                currentQuestion={currentQuestion}
+                selectedAnswers={selectedAnswers}
+                handleCheckboxChange={handleCheckboxChange}
+                isLastQuestionInTopic={isLastQuestionInTopic}
+              />
+              <ActionButtons
+                isLastQuestionInTopic={isLastQuestionInTopic}
+                isLastTopic={isLastTopic}
+                handleSubmitAnswer={handleSubmitAnswer}
+                handleNextTopic={handleNextTopic}
+                handleFinish={handleFinish}
+              />
             </>
           )}
         </div>
@@ -337,5 +340,189 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
     </div>
   );
 }
+
+const PreviewContents = ({
+  currentContent,
+  handlePreviewNextTopic,
+  isLastContent,
+}) => {
+  return (
+    <>
+      <div className="mb-3">
+        <h3 className="text-center">
+          {currentContent?.contentId?.title || "Untitled"}
+        </h3>
+        <p
+          dangerouslySetInnerHTML={{
+            __html:
+              currentContent?.contentId?.description ||
+              "No description available.",
+          }}
+        ></p>
+        {currentContent.contentId?.link && (
+          <p>
+            <strong>Reference:</strong>{" "}
+            <a
+              href={currentContent.contentId.link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {currentContent.contentId.link}
+            </a>
+          </p>
+        )}
+      </div>
+      <div className="d-flex justify-content-center mt-3">
+        <button
+          className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+          onClick={() => handlePreviewNextTopic(isLastContent)}
+        >
+          🚀 {isLastContent ? "Finish" : "Next Topic"}
+        </button>
+      </div>
+    </>
+  );
+};
+
+const ContentDisplay = ({
+  currentContent,
+  isLastQuestionInTopic,
+  isLastTopic,
+}) => {
+  return (
+    <>
+      {!isLastQuestionInTopic ? (
+        <div className="mb-3">
+          <h3 className="text-center">
+            {currentContent.contentId?.title || "Untitled"}
+          </h3>
+          <p
+            className="text-justify"
+            style={{ textAlign: "justify", textIndent: "2em" }}
+            dangerouslySetInnerHTML={{
+              __html:
+                currentContent.contentId?.description ||
+                "No description available.",
+            }}
+          ></p>
+
+          {currentContent.contentId?.link && (
+            <p>
+              <strong>Reference:</strong>{" "}
+              <a
+                href={currentContent.contentId.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {currentContent.contentId.link}
+              </a>
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          {!isLastTopic ? (
+            <div className="mb-3">
+              <p className="lead text-center">
+                🚀 Great work! Ready for the next challenge? Click 'Next Topic'
+                to keep going! 🔥🎯
+              </p>
+            </div>
+          ) : (
+            <div className="mb-3">
+              <p className="lead text-center">
+                🎉 Awesome job! You've completed all the topics! Click 'Finish'
+                to see your results and celebrate your progress! 🏆🚀
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+};
+
+const QuestionDisplay = ({
+  currentQuestion,
+  selectedAnswers,
+  handleCheckboxChange,
+  isLastQuestionInTopic,
+}) => {
+  if (isLastQuestionInTopic || !currentQuestion?.questionId) return null; // Don't render if last question
+
+  return (
+    <>
+      <div className="mb-3 text-start">
+        <p>
+          <strong>Question:</strong> {currentQuestion.questionId.question}
+        </p>
+      </div>
+
+      <div className="text-start">
+        {["A", "B", "C", "D"].map((option) => {
+          const answerText = currentQuestion.questionId[`answer${option}`];
+          const isChecked = selectedAnswers.includes(option);
+
+          return (
+            <div key={option} className="form-check mb-2">
+              <input
+                type="checkbox"
+                id={`answer-${option}`}
+                className="form-check-input"
+                checked={isChecked}
+                onChange={() => handleCheckboxChange(option)}
+              />
+              <label
+                className="form-check-label ms-2 cursor-pointer"
+                htmlFor={`answer-${option}`}
+              >
+                {option}: {answerText}
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
+const ActionButtons = ({
+  isLastQuestionInTopic,
+  isLastTopic,
+  handleSubmitAnswer,
+  handleNextTopic,
+  handleFinish,
+}) => {
+  return (
+    <div className="d-flex justify-content-center mt-3">
+      {!isLastQuestionInTopic ? (
+        <button
+          className="btn btn-primary px-4 py-2 rounded-lg shadow-sm"
+          onClick={handleSubmitAnswer}
+        >
+          🚀 Submit Answer
+        </button>
+      ) : (
+        <>
+          {!isLastTopic ? (
+            <button
+              className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+              onClick={handleNextTopic}
+            >
+              🚀 Next Topic
+            </button>
+          ) : (
+            <button
+              className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+              onClick={handleFinish}
+            >
+              🏆 Finish
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 export default ExercisesPage;
