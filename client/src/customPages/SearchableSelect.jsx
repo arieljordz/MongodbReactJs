@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from "react";
 
 const SearchableSelect = ({
+  fetchQuestions,
   contents,
-  selectedContent,
-  setSelectedContent,
+  selectedQuestion,
+  setSelectedQuestion,
   formData,
   setFormData,
   mode,
+  setMode,
 }) => {
   const [searchTitle, setSearchTitle] = useState("");
   const [filteredTitles, setFilteredTitles] = useState(contents);
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   useEffect(() => {
-    if (!selectedContent) {
+    if (!selectedQuestion) {
       setSearchTitle("");
     }
-  }, [selectedContent]);
+  }, [selectedQuestion]);
 
   useEffect(() => {
     setFilteredTitles(contents);
@@ -34,7 +36,7 @@ const SearchableSelect = ({
 
   const handleSelect = (title) => {
     setSearchTitle(title);
-    setSelectedContent(contents.find((content) => content.title === title));
+    setSelectedQuestion(contents.find((content) => content.title === title));
     setDropdownVisible(false);
   };
 

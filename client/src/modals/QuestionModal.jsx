@@ -1,147 +1,21 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import Swal from "sweetalert2";
+import React from "react";
 import SearchableSelect from "../customPages/SearchableSelect";
-import { useTheme } from "../customPages/ThemeContext";
 
 function QuestionModal({
+  theme,
   fetchQuestions,
   contents,
-  selectedContent,
-  setSelectedContent,
+  selectedQuestion,
+  setSelectedQuestion,
+  formData,
+  setFormData,
   showModal,
-  setShowModal,
+  onChange,
+  onSubmit,
+  onClose,
   mode,
   setMode,
-  selectedRow,
-  setSelectedRow,
 }) {
-  const initialFormState = {
-    question: "",
-    answerA: "",
-    answerACheck: false,
-    answerB: "",
-    answerBCheck: false,
-    answerC: "",
-    answerCCheck: false,
-    answerD: "",
-    answerDCheck: false,
-    contentId: "",
-  };
-  const [formData, setFormData] = useState(initialFormState);
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    if (selectedContent) {
-      setFormData(selectedContent);
-    } else {
-      setFormData(initialFormState);
-    }
-  }, [selectedContent]);
-
-  const handleChange = (e) => {
-    const { name, type, checked, value } = e.target;
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!selectedContent) {
-      return toast.warning("Please select a title first.", {
-        autoClose: 2000,
-        position: "top-right",
-        closeButton: true,
-      });
-    }
-
-    if (
-      !formData.answerACheck &&
-      !formData.answerBCheck &&
-      !formData.answerCCheck &&
-      !formData.answerDCheck
-    ) {
-      return toast.warning("Please select at least one correct answer.", {
-        autoClose: 2000,
-        position: "top-right",
-        closeButton: true,
-      });
-    }
-
-    try {
-      const sanitizedFormData = {
-        question: formData.question || "",
-        answerA: formData.answerA || "",
-        answerACheck: !!formData.answerACheck,
-        answerB: formData.answerB || "",
-        answerBCheck: !!formData.answerBCheck,
-        answerC: formData.answerC || "",
-        answerCCheck: !!formData.answerCCheck,
-        answerD: formData.answerD || "",
-        answerDCheck: !!formData.answerDCheck,
-        contentId: selectedContent?._id || formData.contentId || "",
-      };
-
-      const headers = { headers: { "Content-Type": "application/json" } };
-
-      if (mode === "ADD") {
-        console.log("Add payload:", sanitizedFormData);
-        await axios.post(
-          "http://localhost:3001/createQuestionByContent",
-          sanitizedFormData,
-          headers
-        );
-        toast.success("Question added successfully!", {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
-      } else {
-        const updatePayload = {
-          ...sanitizedFormData,
-          _id: formData._id,
-          contentId: selectedContent.contentId._id,
-        };
-        console.log("Update payload:", updatePayload);
-        await axios.put(
-          `http://localhost:3001/updateQuestion/${formData._id}`,
-          updatePayload,
-          headers
-        );
-        toast.success("Question updated successfully!", {
-          autoClose: 2000,
-          position: "top-right",
-          closeButton: true,
-        });
-        setShowModal(false);
-      }
-
-      fetchQuestions();
-      setFormData(initialFormState);
-    } catch (error) {
-      console.error("Error:", error);
-      alert(
-        error.response?.data?.message ||
-          "Failed to add/update question. Please try again."
-      );
-    }
-
-    setSelectedRow(null);
-  };
-
-  // **Reset fields when clicking Cancel**
-  const handleCancel = () => {
-    setFormData(initialFormState);
-    setShowModal(false);
-    setSelectedContent(null);
-    setSelectedRow(null);
-  };
-
   return (
     <div
       className={`modal fade ${showModal ? "show d-block" : ""} ${theme}`}
@@ -153,23 +27,23 @@ function QuestionModal({
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">
-              {mode === "UPDATE" ? "Update Question" : "Add New Question"}
+              {mode === "EDIT" ? "Update Question" : "Add New Question"}
             </h5>
             <button
               type="button"
               className="btn-close"
               data-bs-dismiss="modal"
               aria-label="Close"
-              onClick={handleCancel}
+              onClick={() => onClose()}
             />
           </div>
           <div className="modal-body">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={onSubmit}>
               <SearchableSelect
                 fetchQuestions={fetchQuestions}
                 contents={contents}
-                selectedContent={selectedContent}
-                setSelectedContent={setSelectedContent}
+                selectedQuestion={selectedQuestion}
+                setSelectedQuestion={setSelectedQuestion}
                 formData={formData}
                 setFormData={setFormData}
                 mode={mode}
@@ -185,7 +59,7 @@ function QuestionModal({
                   name="question"
                   rows={3}
                   value={formData.question}
-                  onChange={handleChange}
+                  onChange={onChange}
                   required
                   placeholder="Enter your question here"
                 />
@@ -206,7 +80,7 @@ function QuestionModal({
                       id={`answer${letter}Check`}
                       name={`answer${letter}Check`}
                       checked={formData[`answer${letter}Check`] || false}
-                      onChange={handleChange}
+                      onChange={onChange}
                     />
                     <label
                       className="form-check-label"
@@ -218,7 +92,7 @@ function QuestionModal({
                       id={`answer${letter}`}
                       name={`answer${letter}`}
                       value={formData[`answer${letter}`] || ""}
-                      onChange={handleChange}
+                      onChange={onChange}
                       required
                       placeholder={`Enter answer ${letter}`}
                     />
@@ -231,7 +105,7 @@ function QuestionModal({
                   type="button"
                   className="btn btn-secondary me-2"
                   data-bs-dismiss="modal"
-                  onClick={handleCancel}
+                  onClick={() => onClose()}
                 >
                   Cancel
                 </button>

@@ -6,46 +6,83 @@ import { useTheme } from "../customPages/ThemeContext";
 
 const useQuestions = () => {
   const { theme } = useTheme();
+  const [contents, setContents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState("ADD");
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [expanded, setExpanded] = useState({});
   const initialFormState = {
-    firstname: "",
-    middlename: "",
-    lastname: "",
-    email: "",
-    userType: "student",
+    question: "",
+    answerA: "",
+    answerACheck: false,
+    answerB: "",
+    answerBCheck: false,
+    answerC: "",
+    answerCCheck: false,
+    answerD: "",
+    answerDCheck: false,
+    contentId: "",
   };
   const [formData, setFormData] = useState(initialFormState);
 
   useEffect(() => {
     fetchQuestions();
+    fetchContents();
   }, []);
+
+  useEffect(() => {
+    if (selectedQuestion) {
+      setFormData(selectedQuestion);
+    } else {
+      setFormData(initialFormState);
+    }
+  }, [selectedQuestion]);
+
+  const fetchContents = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getContents/all");
+      setContents(response.data);
+    } catch (error) {
+      console.error("Error fetching contents:", error);
+    }
+  };
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const { data } = await axios.get("http://localhost:3001/getQuestions/all");
-      setQuestions(data);
+      const response = await axios.get(
+        "http://localhost:3001/getQuestions/all"
+      );
+      const groupedQuestions = response.data.reduce((acc, question) => {
+        const { contentId } = question;
+        if (!acc[contentId._id]) {
+          acc[contentId._id] = { content: contentId, questions: [] };
+        }
+        acc[contentId._id].questions.push(question);
+        return acc;
+      }, {});
+      setQuestions(groupedQuestions);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
   }, []);
 
   // Open Modal for Add/Edit
-  const handleOpenModal = (student = null) => {
-    if (student) {
+  const handleOpenModal = (question = null, contentId) => {
+    // console.log("question:",question);
+    // console.log("contentId:",contentId);
+    if (question) {
       if (!selectedRow) {
         toast.warning("Please select a row before updating.");
         return;
       }
-      if (selectedRow !== student._id) {
+      if (selectedRow !== question._id) {
         toast.warning("Please click the action button on the selected row.");
         return;
       }
       setMode("EDIT");
-      setSelectedQuestion(student);
+      setSelectedQuestion(question);
     } else {
       setMode("ADD");
       setSelectedQuestion(null);
@@ -54,162 +91,187 @@ const useQuestions = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
+  // Toggle expand/collapse
+  const toggleExpand = (contentId) => {
+    setExpanded((prev) => ({ ...prev, [contentId]: !prev[contentId] }));
+  };
+
+  // Handle row selection (excluding action buttons)
+  const handleRowClick = (questionId, event) => {
+    if (event.target.closest(".action-buttons")) return; // Ignore action buttons
+    setSelectedRow((prev) => (prev === questionId ? null : questionId));
+    console.log("selectedRow ID:", questionId);
+  };
+
+  // Handle Delete
+  const handleDelete = async (questionId, contentId) => {
     if (!selectedRow) {
       toast.warning("Please select a row before deleting.");
       return;
     }
-    if (selectedRow !== id) {
+    if (selectedRow !== questionId) {
       toast.warning("Please click the action button on the selected row.");
       return;
     }
-    const isConfirmed = await Swal.fire({
-      title: "Delete Confirmation",
-      text: "Are you sure you want to delete this student?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Delete",
-      cancelButtonText: "Cancel",
-    });
+    try {
+      const isYesNo = await Swal.fire({
+        title: "Confirmation",
+        text: "Are you sure you want to delete this record?",
+        icon: "question",
+        showCancelButton: true,
+        allowOutsideClick: false,
+        confirmButtonText: "Yes, Delete it",
+        cancelButtonText: "Cancel",
+      });
+      // console.log(isYesNo.isConfirmed);
+      if (isYesNo.isConfirmed) {
+        const response = await axios.delete(
+          `http://localhost:3001/deleteQuestion/${questionId}`
+        );
+        setMode("DELETE");
+        if (response.status === 200) {
+          toast.success("Question successfully deleted.", {
+            autoClose: 2000,
+            position: "top-right",
+            closeButton: true,
+          });
 
-    if (isConfirmed.isConfirmed) {
-      try {
-        await axios.delete(`http://localhost:3001/deleteQuestion/${id}`);
-        toast.success("Student deleted successfully.");
-        fetchQuestions();
-      } catch (error) {
-        toast.error("Failed to delete student.");
+          fetchQuestions();
+        }
       }
+    } catch (error) {
+      console.error("Error deleting question:", error);
+
+      toast.error(
+        error.response?.data?.message || "Error while deleting question.",
+        {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        }
+      );
     }
-  };
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
-  const handleRowClick = (id, event) => {
-    if (event.target.closest(".action-buttons")) return;
-    setSelectedRow((prev) => (prev === id ? null : id));
+    setSelectedRow(null);
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, type, checked, value } = e.target;
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!selectedQuestion) {
+      return toast.warning("Please select a title first.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+    }
+
+    if (
+      !formData.answerACheck &&
+      !formData.answerBCheck &&
+      !formData.answerCCheck &&
+      !formData.answerDCheck
+    ) {
+      return toast.warning("Please select at least one correct answer.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+    }
+
     try {
+      const sanitizedFormData = {
+        question: formData.question || "",
+        answerA: formData.answerA || "",
+        answerACheck: !!formData.answerACheck,
+        answerB: formData.answerB || "",
+        answerBCheck: !!formData.answerBCheck,
+        answerC: formData.answerC || "",
+        answerCCheck: !!formData.answerCCheck,
+        answerD: formData.answerD || "",
+        answerDCheck: !!formData.answerDCheck,
+        contentId: selectedQuestion?._id || formData.contentId || "",
+      };
+
+      const headers = { headers: { "Content-Type": "application/json" } };
+
       if (mode === "ADD") {
-        await axios.post("http://localhost:3001/createQuestion", formData, {
-          headers: { "Content-Type": "application/json" },
+        console.log("Add payload:", sanitizedFormData);
+        await axios.post(
+          "http://localhost:3001/createQuestionByContent",
+          sanitizedFormData,
+          headers
+        );
+        toast.success("Question added successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
         });
-        toast.success("Student added successfully!");
       } else {
+        const updatePayload = {
+          ...sanitizedFormData,
+          _id: formData._id,
+          contentId: selectedQuestion.contentId._id,
+        };
+        console.log("Update payload:", updatePayload);
         await axios.put(
           `http://localhost:3001/updateQuestion/${formData._id}`,
-          formData,
-          { headers: { "Content-Type": "application/json" } }
+          updatePayload,
+          headers
         );
-        toast.success("Student updated successfully!");
+        toast.success("Question updated successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+          closeButton: true,
+        });
+        setShowModal(false);
       }
 
       fetchQuestions();
-      handleClose();
+      setFormData(initialFormState);
     } catch (error) {
       console.error("Error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to process request."
+      alert(
+        error.response?.data?.message ||
+          "Failed to add/update question. Please try again."
       );
     }
+
+    setSelectedRow(null);
   };
 
   const handleClose = () => {
     setShowModal(false);
     setSelectedQuestion(null);
     setFormData(initialFormState);
-  };
-
-  // 🔍 Filter and Sort questions
-  const filteredData = questions.filter((student) =>
-    `${student.firstname} ${student.lastname}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-
-  const sortedData = sortConfig.key
-    ? [...filteredData].sort((a, b) =>
-        sortConfig.direction === "asc"
-          ? a[sortConfig.key].localeCompare(b[sortConfig.key])
-          : b[sortConfig.key].localeCompare(a[sortConfig.key])
-      )
-    : filteredData;
-
-  // 📌 Pagination Logic
-  const { currentPage, itemsPerPage } = pagination;
-  const totalPages =
-    itemsPerPage === "All" ? 1 : Math.ceil(filteredData.length / itemsPerPage);
-
-  const displayItems =
-    itemsPerPage === "All"
-      ? sortedData
-      : sortedData.slice(
-          (currentPage - 1) * itemsPerPage,
-          currentPage * itemsPerPage
-        );
-
-  const setCurrentPage = (page) => {
-    setPagination((prev) => {
-      const newPage = Math.max(1, Math.min(page, totalPages || 1));
-      //   console.log("Setting current page to:", newPage); // ✅ Debugging log
-      return { ...prev, currentPage: newPage };
-    });
-  };
-
-  const setItemsPerPage = (value) => {
-    const perPage = value === "All" ? "All" : parseInt(value);
-    setPagination({ currentPage: 1, itemsPerPage: perPage });
-  };
-
-  const handlePreviousClick = () => {
-    if (currentPage > 1) {
-      //   console.log("Previous Clicked: ", currentPage - 1);
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNextClick = () => {
-    if (currentPage < totalPages) {
-      //   console.log("Next Clicked: ", currentPage + 1);
-      setCurrentPage(currentPage + 1);
-    }
+    setSelectedRow(null);
   };
 
   return {
     theme,
+    contents,
     questions,
     fetchQuestions,
-    searchTerm,
-    setSearchTerm,
-    sortConfig,
-    handleSort,
-    pagination,
-    setCurrentPage,
-    setItemsPerPage,
+    toggleExpand,
+    expanded,
+    setExpanded,
     handleDelete,
     handleRowClick,
     handleChange,
     handleSubmit,
     handleClose,
     formData,
+    setFormData,
     selectedRow,
-    totalPages,
-    displayItems,
-    handlePreviousClick,
-    handleNextClick,
+    setSelectedRow,
     handleOpenModal,
     selectedQuestion,
     setSelectedQuestion,

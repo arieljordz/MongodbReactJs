@@ -5,50 +5,15 @@ import "react-toastify/dist/ReactToastify.css";
 const QuestionTable = ({
   questionsData,
   theme,
+  toggleExpand,
+  expanded,
+  setExpanded,
+  onRowClick,
   onUpdate,
   onDelete,
   selectedRow,
   setSelectedRow,
 }) => {
-  const [expanded, setExpanded] = useState({});
-
-  // Toggle expand/collapse
-  const toggleExpand = (contentId) => {
-    setExpanded((prev) => ({ ...prev, [contentId]: !prev[contentId] }));
-  };
-
-  // Handle row selection (excluding action buttons)
-  const handleRowClick = (questionId, event) => {
-    if (event.target.closest(".action-buttons")) return; // Ignore action buttons
-    setSelectedRow((prev) => (prev === questionId ? null : questionId));
-  };
-
-  // Handle update
-  const handleUpdate = (questionId, contentId) => {
-    if (!selectedRow) {
-      toast.warning("Please select a row before updating.");
-      return;
-    }
-    if (selectedRow !== questionId) {
-      toast.warning("Please click the action button on the selected row.");
-      return;
-    }
-    onUpdate(questionId, contentId);
-  };
-
-  // Handle delete
-  const handleDelete = (questionId, contentId) => {
-    if (!selectedRow) {
-      toast.warning("Please select a row before deleting.");
-      return;
-    }
-    if (selectedRow !== questionId) {
-      toast.warning("Please click the action button on the selected row.");
-      return;
-    }
-    onDelete(questionId, contentId);
-  };
-
   return (
     <div className="accordion" id="questionsAccordion">
       {Object.values(questionsData).map((group, index) => {
@@ -66,7 +31,10 @@ const QuestionTable = ({
               onClick={() => toggleExpand(content._id)}
               style={{ cursor: "pointer" }}
             >
-              <h5 className="mb-0">{content.title || "Untitled"}</h5>
+              <h5 className="mb-0">
+                {index + 1}. {content.title || "Untitled"}
+              </h5>
+
               <i
                 className={`fas ${
                   expanded[content._id] ? "fa-chevron-up" : "fa-chevron-down"
@@ -101,7 +69,7 @@ const QuestionTable = ({
                               ? "table-primary cursor-pointer"
                               : "cursor-pointer"
                           }
-                          onClick={(event) => handleRowClick(q._id, event)}
+                          onClick={(event) => onRowClick(q._id, event)}
                         >
                           <td className="text-center">{rowIndex + 1}</td>
                           <td>{q.question}</td>
@@ -113,14 +81,14 @@ const QuestionTable = ({
                             <div className="d-flex justify-content-center action-buttons">
                               <button
                                 className="btn btn-primary btn-sm mx-1"
-                                onClick={() => handleUpdate(q._id, content._id)}
+                                onClick={() => onUpdate(q, content._id)}
                                 title="Edit"
                               >
                                 <i className="fas fa-edit"></i>
                               </button>
                               <button
                                 className="btn btn-danger btn-sm mx-1"
-                                onClick={() => handleDelete(q._id, content._id)}
+                                onClick={() => onDelete(q._id, content._id)}
                                 title="Delete"
                               >
                                 <i className="fas fa-trash"></i>

@@ -110,14 +110,16 @@ const ProgressTable = ({ progressData, theme }) => {
 
   return (
     <div className="accordion" id="resultsAccordion">
-      {progressData.map((student) => (
+      {progressData.map((student, index) => (
         <div className="card mb-2" key={student.studentId}>
           <div
             className="card-header d-flex align-items-center"
             onClick={() => toggleExpand(student.studentId)}
             style={{ cursor: "pointer" }}
           >
-            <h5 className="mb-0">{student.studentName}</h5>
+            <h5 className="mb-0">
+              {index + 1}. {student.studentName}
+            </h5>
             <i
               className={`fas ${
                 expanded[student.studentId]
