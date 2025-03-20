@@ -16,8 +16,6 @@ function QuestionModal({
   setMode,
   selectedRow,
   setSelectedRow,
-  activeDropdown,
-  setActiveDropdown,
 }) {
   const initialFormState = {
     question: "",
@@ -133,8 +131,7 @@ function QuestionModal({
       );
     }
 
-    setSelectedRow({});
-    setActiveDropdown(null);
+    setSelectedRow(null);
   };
 
   // **Reset fields when clicking Cancel**
@@ -142,8 +139,7 @@ function QuestionModal({
     setFormData(initialFormState);
     setShowModal(false);
     setSelectedContent(null);
-    setSelectedRow({});
-    setActiveDropdown(null);
+    setSelectedRow(null);
   };
 
   return (

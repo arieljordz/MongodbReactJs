@@ -5,6 +5,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import Timer from "../customPages/Timer";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import Header from "../customPages/Header";
 
 function ExercisesPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
@@ -262,19 +263,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
 
   return (
     <div className={`container mt-6 ${theme}`}>
-      <div className="content-header">
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <a className="text-blue">Home</a>
-            </li>
-            <li className="breadcrumb-item">
-              <a className="text-blue">Exercises</a>
-            </li>
-          </ol>
-        </nav>
-      </div>
-
+      <Header levelOne="Home" levelTwo="Exercises" />
       <div className={`card card-${theme} shadow-lg rounded-lg mx-auto`}>
         <div
           className={`card-header ${

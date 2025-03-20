@@ -3,6 +3,7 @@ import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import { useTheme } from "../customPages/ThemeContext";
+import Header from "../customPages/Header";
 
 const AllResultPage = () => {
   const { theme } = useTheme();
@@ -75,7 +76,7 @@ const AllResultPage = () => {
 
   return (
     <div className={`container mt-6 ${theme}`}>
-      <Header />
+      <Header levelOne="Home" levelTwo="Results" />
       <div
         className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
       >
@@ -93,31 +94,14 @@ const AllResultPage = () => {
             theme === "dark" ? "dark-mode text-white" : ""
           }`}
         >
-          <ProgressTable progressData={results} />
+          <ProgressTable progressData={results} theme={theme} />
         </div>
       </div>
     </div>
   );
 };
 
-const Header = () => (
-  <div className="content-header">
-    <div className="d-flex justify-content-start">
-      <nav aria-label="breadcrumb">
-        <ol className="breadcrumb">
-          <li className="breadcrumb-item">
-            <a children="text-blue">Home</a>
-          </li>
-          <li className="breadcrumb-item">
-            <a children="text-blue">Results</a>
-          </li>
-        </ol>
-      </nav>
-    </div>
-  </div>
-);
-
-const ProgressTable = ({ progressData }) => {
+const ProgressTable = ({ progressData, theme }) => {
   const [expanded, setExpanded] = useState({});
 
   const toggleExpand = (studentId) => {
@@ -143,39 +127,43 @@ const ProgressTable = ({ progressData }) => {
             />
           </div>
           {expanded[student.studentId] && (
-            <div className="card-body">
-              <table className="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Content Title</th>
-                    <th>Total Items</th>
-                    <th>Correct Answers</th>
-                    <th>Percentage</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {student.contents.map((content) => (
-                    <tr key={content.contentId}>
-                      <td>{content.contentTitle}</td>
-                      <td>{content.totalCount}</td>
-                      <td>{content.correctCount}</td>
-                      <td>{content.percentage}%</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            content.status === "Passed"
-                              ? "bg-success"
-                              : "bg-danger"
-                          }`}
-                        >
-                          {content.status}
-                        </span>
-                      </td>
+            <div className="card-body pt-0">
+              <div className="table-responsive">
+                <table className="table table-striped table-bordered">
+                  <thead
+                    className={theme === "dark" ? "table-dark" : "table-light"}
+                  >
+                    <tr>
+                      <th>Content Title</th>
+                      <th>Total Items</th>
+                      <th>Correct Answers</th>
+                      <th>Percentage</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {student.contents.map((content) => (
+                      <tr key={content.contentId}>
+                        <td>{content.contentTitle}</td>
+                        <td>{content.totalCount}</td>
+                        <td>{content.correctCount}</td>
+                        <td>{content.percentage}%</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              content.status === "Passed"
+                                ? "bg-success"
+                                : "bg-danger"
+                            }`}
+                          >
+                            {content.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

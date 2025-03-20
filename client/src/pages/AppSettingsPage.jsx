@@ -5,6 +5,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
+import Header from "../customPages/Header";
 
 function AppSettingsPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
@@ -54,21 +55,7 @@ function AppSettingsPage({ moveToNextStep, allowedPath }) {
 
   return (
     <div className={`container mt-6 ${theme}`}>
-      <div className="content-header">
-        <div className="d-flex justify-content-start">
-          <nav aria-label="breadcrumb mt-5">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a children="text-blue">Home</a>
-              </li>
-              <li className="breadcrumb-item">
-                <a children="text-blue">App Settings</a>
-              </li>
-            </ol>
-          </nav>
-        </div>
-      </div>
-
+      <Header levelOne="Home" levelTwo="App Settings" />
       <div
         className={`card card-${theme} shadow-lg rounded-lg mx-auto`}
         style={{ maxWidth: "400px" }}

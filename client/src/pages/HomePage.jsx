@@ -3,6 +3,7 @@ import axios from "axios";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import Header from "../customPages/Header";
 
 function HomePage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
@@ -103,21 +104,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
 
   return (
     <div className={`container mt-6 ${theme}`}>
-      <div className="content-header">
-        <div className="d-flex justify-content-start">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a children="text-blue">Home</a>
-              </li>
-              <li className="breadcrumb-item">
-                <a children="text-blue">Home</a>
-              </li>
-            </ol>
-          </nav>
-        </div>
-      </div>
-
+      <Header levelOne="Home" levelTwo="Home" />
       <div
         className={`card card-${theme} shadow-lg rounded-lg text-center mx-auto`}
       >
