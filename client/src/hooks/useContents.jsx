@@ -5,7 +5,14 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useContents = () => {
-  const { theme } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const [contents, setContents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -164,7 +171,6 @@ const useContents = () => {
     setSelectedContent(null);
   };
 
-
   // 🔍 Filter and Sort contents
   const filteredData = contents.filter((content) =>
     `${content.title} ${content.category}`
@@ -249,6 +255,8 @@ const useContents = () => {
     setShowModal,
     mode,
     setMode,
+    cardBgColor,
+    btnBgColor,
   };
 };
 

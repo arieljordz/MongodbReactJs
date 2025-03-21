@@ -8,6 +8,7 @@ const StudentModal = ({
   formData,
   showModal,
   mode,
+  btnBgColor,
 }) => {
   return (
     <div
@@ -74,7 +75,7 @@ const StudentModal = ({
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className={`btn ${btnBgColor}`}>
                   {mode === "ADD" ? "Add" : "Update"}
                 </button>
               </div>

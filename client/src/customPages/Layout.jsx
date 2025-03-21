@@ -22,11 +22,7 @@ import PrivateRoute from "./PrivateRoute";
 import PreventBackNavigation from "../customPages/PreventBackNavigation";
 
 // Define page access flow
-const studentFlow = [
-  "/student/home",
-  "/student/exercises",
-  "/student/results",
-];
+const studentFlow = ["/student/home", "/student/exercises", "/student/results"];
 const teacherFlow = [
   "/admin/results",
   "/admin/contents",
@@ -38,7 +34,7 @@ const teacherFlow = [
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } = useTheme();
 
   const [studentData, setStudentData] = useState(() => {
     return JSON.parse(localStorage.getItem("user")) || null;
@@ -61,7 +57,7 @@ const Layout = () => {
       const flow = getAllowedFlow(studentData.userType);
       const savedPath = localStorage.getItem("allowedPath");
       // const progress = localStorage.getItem("progress");
-  
+
       // console.log("studentData: ", studentData);
       // console.log("progress: ", progress);
       // console.log("savedPath: ", savedPath);

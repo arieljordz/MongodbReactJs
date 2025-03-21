@@ -6,7 +6,8 @@ import { useTheme } from "../customPages/ThemeContext";
 import Header from "../customPages/Header";
 
 const AllResultPage = () => {
-  const { theme } = useTheme();
+  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } =
+    useTheme();
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const [results, setResults] = useState([]);
 
@@ -81,11 +82,7 @@ const AllResultPage = () => {
         className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
       >
         <div
-          className={`card-header ${
-            theme === "dark"
-              ? "bg-success-dark-mode text-white"
-              : "bg-success text-white"
-          } py-3 d-flex justify-content-start`}
+          className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
         >
           <h2 className="card-title font-weight-bold m-0">🎯 Results!</h2>
         </div>

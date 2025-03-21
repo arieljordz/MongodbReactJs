@@ -1,3 +1,5 @@
+const WebSocket = require("ws");
+const url = require("url");
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
@@ -5,10 +7,9 @@ const { ObjectId } = require("mongodb");
 const PersonModel = require("./models/Person");
 const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
-const AnswerModel = require("./models/Answers");
-const ExercisesModel = require("./models/Exercises");
 const ProgressModel = require("./models/Progress");
 const AppSettingsModel = require("./models/AppSettings");
+const wss = new WebSocket.Server({ port: 8080 }); // Run WebSocket on port 8080
 
 const app = express();
 app.use(express.json());
@@ -28,6 +29,52 @@ mongoose
   .connect(mongoURI)
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+wss.on("connection", async (ws, req) => {
+  const queryParams = url.parse(req.url, true).query;
+  const progressId = queryParams.progressId;
+
+  if (!progressId) {
+    ws.close();
+    return;
+  }
+
+  console.log(`Client connected: Student ID = ${progressId}`);
+
+  let progress = await ProgressModel.findOne({ _id: progressId });
+
+  console.log("progress timeLeft:", progress?.timeLeft);
+  let timeLeft = progress?.timeLeft ?? 0; // ✅ Get saved timeLeft or default to 600
+
+  ws.send(JSON.stringify({ timeLeft })); // ✅ Send latest timeLeft to client on connect
+
+  // Countdown logic (update DB every 10s to reduce load)
+  const interval = setInterval(async () => {
+    if (timeLeft <= 0) {
+      clearInterval(interval);
+      return;
+    }
+
+    timeLeft--;
+
+    // Send updated timeLeft to all connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ timeLeft }));
+      }
+    });
+
+    // Save timeLeft to database every 10 seconds
+    if (timeLeft % 2 === 0) {
+      await ProgressModel.updateOne({ _id: progressId }, { timeLeft });
+    }
+  }, 1000);
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+    clearInterval(interval);
+  });
+});
 
 // Person End Points
 app.post("/createPerson", async (req, res) => {
@@ -390,16 +437,21 @@ app.post("/createProgress", async (req, res) => {
 
     // Ensure student exists
     const student = await PersonModel.findById(studentObjectId);
-    if (!student) return res.status(404).json({ message: "Student not found." });
+    if (!student)
+      return res.status(404).json({ message: "Student not found." });
 
     // Check if progress already exists
     let progress = await ProgressModel.findOne({
       studentId: studentObjectId,
       category,
       isDone: false,
-    }).populate("studentId", "firstname middlename lastname email")
+    })
+      .populate("studentId", "firstname middlename lastname email")
       .populate({ path: "progress.contentId", model: "Contents" })
-      .populate({ path: "progress.answeredQuestions.questionId", model: "Questions" });
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
 
     if (progress) return res.status(200).json(progress);
 
@@ -409,8 +461,11 @@ app.post("/createProgress", async (req, res) => {
 
     // Fetch content for the given category
     const categoryContents = await ContentModel.find({ category });
-    if (!categoryContents.length) return res.status(404).json({ message: "No content found for this category." });
-    
+    if (!categoryContents.length)
+      return res
+        .status(404)
+        .json({ message: "No content found for this category." });
+
     // Shuffle content
     const shuffledContents = categoryContents.sort(() => Math.random() - 0.5);
 
@@ -450,7 +505,10 @@ app.post("/createProgress", async (req, res) => {
     const populatedProgress = await ProgressModel.findById(progress._id)
       .populate("studentId", "firstname middlename lastname email")
       .populate({ path: "progress.contentId", model: "Contents" })
-      .populate({ path: "progress.answeredQuestions.questionId", model: "Questions" });
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
 
     res.status(201).json(populatedProgress);
   } catch (error) {
@@ -471,12 +529,16 @@ app.get("/getProgress/:studentId/:category/:isDone", async (req, res) => {
     const studentObjectId = new mongoose.Types.ObjectId(studentId);
     const isDoneBoolean = isDone === "true"; // ✅ Convert string to boolean
 
-    console.log("Fetching progress for:", { studentId, category, isDoneBoolean });
+    console.log("Fetching progress for:", {
+      studentId,
+      category,
+      isDoneBoolean,
+    });
 
-    const progress = await ProgressModel.findOne({ 
-      studentId: studentObjectId, 
-      category, 
-      isDone: isDoneBoolean 
+    const progress = await ProgressModel.findOne({
+      studentId: studentObjectId,
+      category,
+      isDone: isDoneBoolean,
     })
       .populate("progress.contentId")
       .populate("progress.answeredQuestions.questionId")
@@ -536,7 +598,6 @@ app.put("/updateTimeLeft/:progressId", async (req, res) => {
     const { progressId } = req.params;
     const { timeLeft } = req.body;
 
-    
     // ✅ Validate progress ID format
     if (!mongoose.Types.ObjectId.isValid(progressId)) {
       return res.status(400).json({ error: "Invalid progress ID" });
@@ -556,7 +617,10 @@ app.put("/updateTimeLeft/:progressId", async (req, res) => {
       return res.status(404).json({ error: "Progress not found" });
     }
 
-    res.json({ message: "Time updated successfully", progress: updatedProgress });
+    res.json({
+      message: "Time updated successfully",
+      progress: updatedProgress,
+    });
   } catch (error) {
     console.error("Error updating timeLeft:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -572,7 +636,10 @@ app.get("/getAllResults/:category/:isDone", async (req, res) => {
     console.log("Fetching progress for:", { category, isDoneBoolean });
 
     // Fetch all progress documents that match the given category and isDone status
-    const progressRecords = await ProgressModel.find({ category, isDone: isDoneBoolean })
+    const progressRecords = await ProgressModel.find({
+      category,
+      isDone: isDoneBoolean,
+    })
       .populate("studentId", "firstname middlename lastname email") // Populate student details
       .populate("progress.contentId")
       .populate("progress.answeredQuestions.questionId")
@@ -586,8 +653,6 @@ app.get("/getAllResults/:category/:isDone", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-
 
 // Start Server
 const PORT = process.env.PORT || 3001;

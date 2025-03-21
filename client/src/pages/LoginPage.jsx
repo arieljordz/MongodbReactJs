@@ -4,7 +4,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
 function LoginPage({ setStudentData }) {
-  const { theme } = useTheme();
+  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } = useTheme();
   const navigate = useNavigate();
   const [userDetails, setUserDetails] = useState({
     userType: "student",

@@ -32,7 +32,7 @@ const ContentTable = ({ contents, theme, onDelete, onUpdate, onSort, sortConfig,
               >
                 <td className="text-center">{index + 1}</td>
                 <td>{item.title}</td>
-                <td>{item.description}</td>
+                <td>{item.description.length > 50 ? item.description.substring(0, 50) + "..." : item.description}</td>
                 <td>{item.link}</td>
                 <td>{item.category}</td>
                 <td className="text-center">

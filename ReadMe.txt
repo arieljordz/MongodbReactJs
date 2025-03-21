@@ -28,5 +28,7 @@ npm install express
 npm install mongoose
 npm install cors
 npm install nodemon
+npm install ws
+
 node index.js
 

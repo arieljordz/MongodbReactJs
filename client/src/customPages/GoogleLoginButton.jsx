@@ -31,19 +31,22 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
 
   const handleSuccess = (response) => {
     const decoded = jwt_decode(response.credential);
-  
+
+    console.log("decoded: ", decoded);
+
     // User Data from Google
     const userData = {
+      picture: decoded.picture,
       email: decoded.email,
       firstName: decoded.given_name,
       lastName: decoded.family_name,
       userType: userDetails.userType,
-      category: userDetails.category, 
+      category: userDetails.category,
     };
-  
-    // console.log("userData: ", userData);
+
+    console.log("userData: ", userData);
     const validatedStudent = validateUser(userData);
-  
+
     if (!validatedStudent) {
       toast.warning("Unauthorized: Email address is not registered.", {
         autoClose: 2000,
@@ -53,17 +56,21 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
       console.error("Unauthorized: Email address is not registered.");
       return;
     }
-  
+
     // Merge validated student data with category
-    const updatedStudentData = { ...validatedStudent, category: userDetails.category };
-  
+    const updatedStudentData = {
+      ...validatedStudent,
+      category: userDetails.category,
+      picture: decoded.picture,
+    };
+
     // Store updated user data in localStorage
     localStorage.setItem("user", JSON.stringify(updatedStudentData));
-  
+
     // Pass student details to parent component
     setStudentData(updatedStudentData);
   };
-  
+
   const handleFailure = () => {
     console.log("Google login failed");
   };

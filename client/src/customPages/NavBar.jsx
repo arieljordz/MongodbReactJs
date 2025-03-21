@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import Settings from "./Settings";
-import { useNavigate } from "react-router-dom";
+import UserProfileModal from "../modals/UserProfileModal";
 
 function NavBar({ studentData, moveToNextStep, allowedPath }) {
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
+  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } =
+    useTheme();
+  const [showModal, setShowModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   // console.log("NavBar: ", studentData);
 
   const handleLogout = () => {
@@ -15,14 +17,18 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
     localStorage.removeItem("allowedPath");
     // localStorage.removeItem("progress");
 
-    // let path = studentData?.userType = "student"?"/student/home":"/admin/results";
     localStorage.setItem("allowedPath", "/student/home");
     // moveToNextStep();
     window.location.href = "/";
   };
 
   const handleProfile = () => {
-    alert("Show profile modal");
+    setShowModal(true);
+    setShowDropdown(false);
+  };
+
+  const handleCloseProfile = () => {
+    setShowModal(false);
   };
 
   const handleClick = (path) => {
@@ -35,7 +41,7 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
 
   return (
     <div>
-      <nav className="navbar navbar-expand-lg bg-dark navbar-dark fixed-top">
+      <nav className={`navbar navbar-expand-lg fixed-top ${navBgColor}`}>
         <div className="container">
           <label className="navbar-brand">E-Learning</label>
 
@@ -106,9 +112,17 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
               onProfile={handleProfile}
               onToggleTheme={toggleTheme}
               onLogout={handleLogout}
+              showDropdown={showDropdown}
+              setShowDropdown={setShowDropdown}
             />
           </div>
         </div>
+        <UserProfileModal
+          theme={theme}
+          onClose={handleCloseProfile}
+          showModal={showModal}
+          studentData={studentData}
+        />
       </nav>
     </div>
   );

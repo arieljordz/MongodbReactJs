@@ -5,7 +5,14 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useQuestions = () => {
-  const { theme } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const [contents, setContents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -279,6 +286,8 @@ const useQuestions = () => {
     setShowModal,
     mode,
     setMode,
+    cardBgColor,
+    btnBgColor,
   };
 };
 

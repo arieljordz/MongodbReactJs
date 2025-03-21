@@ -5,7 +5,14 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useStudents = () => {
-  const { theme } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -234,6 +241,8 @@ const useStudents = () => {
     setShowModal,
     mode,
     setMode,
+    cardBgColor,
+    btnBgColor,
   };
 };
 

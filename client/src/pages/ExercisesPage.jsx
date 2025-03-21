@@ -4,15 +4,22 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useTheme } from "../customPages/ThemeContext";
 import Timer from "../customPages/Timer";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Header from "../customPages/Header";
 
 function ExercisesPage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
-  const { theme } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const navigate = useNavigate();
-  const totalTime = 10 * 60;
-  const [timeLeft, setTimeLeft] = useState(totalTime);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [progress, setProgress] = useState(null);
   const [progressExist, setProgressExist] = useState(false);
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
@@ -42,31 +49,18 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
   };
 
   const handleTimeUp = () => {
-    toast.error("Time is up! Submitting automatically.", { autoClose: 2000 });
-    navigate("/student/congrats");
-  };
-
-  // ✅ Function to update `timeLeft` from Timer every second
-  const handleTimeUpdate = (newTime) => {
-    setTimeLeft(newTime);
-
-    // ✅ Update only every 30 seconds to prevent excessive API calls
-    if (Date.now() - lastUpdateTime >= 30000) {
-      updateTimeLeft(newTime);
-      setLastUpdateTime(Date.now());
-    }
-  };
-
-  // ✅ Function to update time in the database
-  const updateTimeLeft = async (newTime) => {
-    // console.log("newTimeleft:", newTime);
-    try {
-      await axios.put(`http://localhost:3001/updateTimeLeft/${progress._id}`, {
-        timeLeft: newTime,
-      });
-    } catch (error) {
-      console.error("Failed to update timeLeft:", error);
-    }
+    Swal.fire({
+      title: "Time's Up!",
+      text: "Your test time has expired. Click OK to view your results.",
+      icon: "info",
+      confirmButtonText: "OK",
+      allowOutsideClick: false, // Prevents closing by clicking outside
+      allowEscapeKey: false, // Prevents closing with the "Escape" key
+      allowEnterKey: false, // Prevents closing by pressing "Enter"
+    }).then(() => {
+      moveToNextStep();
+      navigate("/student/results");
+    });
   };
 
   const fetchData = async (isDone) => {
@@ -80,11 +74,11 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
     try {
       let progressData = await fetchData(false);
 
-      console.log("Fetched not yet done progress:", progressData);
+      // console.log("Fetched not yet done progress:", progressData);
 
       if (!progressData) {
         progressData = await fetchData(true);
-        console.log("Fetched done progress:", progressData);
+        // console.log("Fetched done progress:", progressData);
         setProgressExist(true);
       }
 
@@ -266,11 +260,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
       <Header levelOne="Home" levelTwo="Exercises" />
       <div className={`card card-${theme} shadow-lg rounded-lg mx-auto`}>
         <div
-          className={`card-header ${
-            theme === "dark"
-              ? "bg-success-dark-mode text-white"
-              : "bg-success text-white"
-          } py-3`}
+          className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
         >
           <h2 className="card-title font-weight-bold m-0">
             📚 Reading Comprehension
@@ -281,9 +271,10 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
           {!progressExist ? (
             <div className="d-flex justify-content-end mt-2 me-3">
               <Timer
-                duration={timeLeft}
+                progressId={progress._id}
                 onTimeUp={handleTimeUp}
-                updateTimeLeft={handleTimeUpdate}
+                timeLeft={timeLeft}
+                setTimeLeft={setTimeLeft}
               />
             </div>
           ) : null}
@@ -301,6 +292,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
               isLastContent={
                 currentContentIndex === progress.progress.length - 1
               }
+              btnBgColor={btnBgColor}
             />
           ) : (
             <>
@@ -321,6 +313,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
                 handleSubmitAnswer={handleSubmitAnswer}
                 handleNextTopic={handleNextTopic}
                 handleFinish={handleFinish}
+                btnBgColor={btnBgColor}
               />
             </>
           )}
@@ -334,6 +327,7 @@ const PreviewContents = ({
   currentContent,
   handlePreviewNextTopic,
   isLastContent,
+  btnBgColor,
 }) => {
   return (
     <>
@@ -363,7 +357,7 @@ const PreviewContents = ({
       </div>
       <div className="d-flex justify-content-center mt-3">
         <button
-          className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+          className={`btn ${btnBgColor} px-4 py-2 rounded-lg shadow-sm`}
           onClick={() => handlePreviewNextTopic(isLastContent)}
         >
           🚀 {isLastContent ? "Finish" : "Next Topic"}
@@ -395,7 +389,7 @@ const ContentDisplay = ({
             }}
           ></p>
 
-          {currentContent.contentId?.link && (
+          {/* {currentContent.contentId?.link && (
             <p>
               <strong>Reference:</strong>{" "}
               <a
@@ -406,6 +400,37 @@ const ContentDisplay = ({
                 {currentContent.contentId.link}
               </a>
             </p>
+          )} */}
+          {currentContent.contentId?.link && (
+            <div>
+              <strong>Reference:</strong>
+              {currentContent.contentId.link.includes("youtube.com") ||
+              currentContent.contentId.link.includes("youtu.be") ? (
+                // Responsive Video Embed
+                <div className="video-container">
+                  <iframe
+                    src={currentContent.contentId.link.replace(
+                      "watch?v=",
+                      "embed/"
+                    )}
+                    title="Video Reference"
+                    frameBorder="0"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              ) : (
+                // Display as a normal link if it's not a YouTube video
+                <p>
+                  <a
+                    href={currentContent.contentId.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {currentContent.contentId.link}
+                  </a>
+                </p>
+              )}
+            </div>
           )}
         </div>
       ) : (
@@ -481,12 +506,13 @@ const ActionButtons = ({
   handleSubmitAnswer,
   handleNextTopic,
   handleFinish,
+  btnBgColor,
 }) => {
   return (
     <div className="d-flex justify-content-center mt-3">
       {!isLastQuestionInTopic ? (
         <button
-          className="btn btn-primary px-4 py-2 rounded-lg shadow-sm"
+          className={`btn ${btnBgColor} px-4 py-2 rounded-lg shadow-sm`}
           onClick={handleSubmitAnswer}
         >
           🚀 Submit Answer
@@ -495,14 +521,14 @@ const ActionButtons = ({
         <>
           {!isLastTopic ? (
             <button
-              className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+              className={`btn ${btnBgColor} px-4 py-2 rounded-lg shadow-sm`}
               onClick={handleNextTopic}
             >
               🚀 Next Topic
             </button>
           ) : (
             <button
-              className="btn btn-success px-4 py-2 rounded-lg shadow-sm"
+              className={`btn ${btnBgColor} px-4 py-2 rounded-lg shadow-sm`}
               onClick={handleFinish}
             >
               🏆 Finish

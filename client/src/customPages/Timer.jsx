@@ -1,37 +1,38 @@
 import React, { useState, useEffect } from "react";
 
-const Timer = ({ duration, onTimeUp, updateTimeLeft }) => {
-  const [timeLeft, setTimeLeft] = useState(duration);
+const Timer = ({ progressId, onTimeUp, timeLeft, setTimeLeft }) => {
 
   useEffect(() => {
-    setTimeLeft(duration); // ✅ Reset timer when duration changes
-  }, [duration]);
+    if (!progressId) return;
+
+    const socket = new WebSocket(`ws://localhost:8080?progressId=${progressId}`);
+
+    socket.onopen = () => {
+      console.log("Connected to WebSocket");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.timeLeft !== undefined) {
+        setTimeLeft(data.timeLeft); // ✅ Get latest timeLeft from server
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket closed");
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [progressId]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
       onTimeUp();
-      return;
     }
+  }, [timeLeft, onTimeUp]);
 
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          onTimeUp(); // ✅ Calls parent callback, but only once
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []); // ✅ Run only once when the component mounts
-
-  useEffect(() => {
-    updateTimeLeft(timeLeft); // ✅ Send updated time to parent
-  }, [timeLeft, updateTimeLeft]); // ✅ Only when `timeLeft` changes
-
-  // Format time (MM:SS)
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;

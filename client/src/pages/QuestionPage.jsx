@@ -29,6 +29,8 @@ const QuestionPage = () => {
     setShowModal,
     mode,
     setMode,
+    cardBgColor,
+    btnBgColor,
   } = useQuestions();
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -37,11 +39,7 @@ const QuestionPage = () => {
         className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
       >
         <div
-          className={`card-header ${
-            theme === "dark"
-              ? "bg-success-dark-mode text-white"
-              : "bg-success text-white"
-          } py-3 d-flex justify-content-start`}
+          className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
         >
           <h2 className="card-title font-weight-bold m-0">📝 Questions</h2>
         </div>
@@ -54,7 +52,7 @@ const QuestionPage = () => {
             <div className="col-12 col-md-1">
               <button
                 type="button"
-                className="btn btn-primary w-100"
+                className={`btn ${btnBgColor} w-100`}
                 onClick={() => handleOpenModal()}
               >
                 Add New
@@ -89,6 +87,7 @@ const QuestionPage = () => {
         onClose={handleClose}
         mode={mode}
         setMode={setMode}
+        btnBgColor={btnBgColor}
       />
     </div>
   );

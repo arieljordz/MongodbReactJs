@@ -8,6 +8,7 @@ function ContentModal({
   formData,
   showModal,
   mode,
+  btnBgColor,
 }) {
   return (
     <div
@@ -98,7 +99,7 @@ function ContentModal({
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className={`btn ${btnBgColor}`}>
                   {mode === "ADD" ? "Add" : "Update"}
                 </button>
               </div>

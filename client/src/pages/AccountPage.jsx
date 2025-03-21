@@ -36,6 +36,8 @@ const AccountPage = () => {
     setShowModal,
     mode,
     setMode,
+    cardBgColor,
+    btnBgColor,
   } = useStudents();
 
   return (
@@ -47,13 +49,9 @@ const AccountPage = () => {
           className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
         >
           <div
-            className={`card-header ${
-              theme === "dark"
-                ? "bg-success-dark-mode text-white"
-                : "bg-success text-white"
-            } py-3 d-flex justify-content-between`}
+            className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
           >
-            <h2 className="card-title font-weight-bold m-0">🎯 Students</h2>
+            <h2 className="card-title font-weight-bold m-0">✏️ Students</h2>
           </div>
 
           <div
@@ -66,7 +64,7 @@ const AccountPage = () => {
               <div className="col-12 col-md-1">
                 <button
                   type="button"
-                  className="btn btn-primary w-100"
+                  className={`btn ${btnBgColor} w-100`}
                   onClick={() => handleOpenModal()}
                 >
                   Add New
@@ -121,6 +119,7 @@ const AccountPage = () => {
         showModal={showModal}
         mode={mode}
         setMode={setMode}
+        btnBgColor={btnBgColor}
       />
     </>
   );

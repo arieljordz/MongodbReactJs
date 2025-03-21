@@ -7,7 +7,14 @@ import Header from "../customPages/Header";
 
 function HomePage({ moveToNextStep, allowedPath }) {
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
-  const { theme } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(null);
   const [progressExist, setProgressExist] = useState(false);
@@ -110,11 +117,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
       >
         {/* Card Header */}
         <div
-          className={`card-header ${
-            theme === "dark"
-              ? "bg-success-dark-mode text-white"
-              : "bg-success text-white"
-          } py-3 d-flex justify-content-center`}
+          className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
         >
           <h2 className="card-title font-weight-bold m-0">
             🚀 Ready to Challenge Yourself?
@@ -143,7 +146,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
 
           {/* Start Test Button */}
           <button
-            className="btn btn-primary mt-3 px-4 py-2 rounded-lg shadow-sm"
+            className={`btn ${btnBgColor} mt-3 px-4 py-2 rounded-lg shadow-sm`}
             onClick={handleStartExercises}
           >
             {progressExist

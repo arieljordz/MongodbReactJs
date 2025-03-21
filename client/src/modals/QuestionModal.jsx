@@ -15,6 +15,7 @@ function QuestionModal({
   onClose,
   mode,
   setMode,
+  btnBgColor,
 }) {
   return (
     <div
@@ -109,7 +110,7 @@ function QuestionModal({
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className={`btn ${btnBgColor}`}>
                   {mode === "ADD" ? "Add" : "Update"}
                 </button>
               </div>
