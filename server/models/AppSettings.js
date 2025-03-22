@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 // Define Schema
 const AppSettingsSchema = new mongoose.Schema({
   timeDuration: String,
+  appName: String,
   isEnabled: { type: Boolean },
   dateAdded: { type: Date, default: Date.now },
 });

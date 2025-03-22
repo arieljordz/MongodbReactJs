@@ -13,8 +13,8 @@ const NavBarColor = ({ navBgColor, toggleNavBar }) => {
   ];
 
   return (
-    <div className="mb-3">
-      <label className="form-label">Navbar Color</label>
+    <div className="mb-2 text-left">
+      <label className="form-label d-block text-start">Navbar Color (active):</label>
       <select
         className="form-select"
         value={navBgColor}

@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 
 function GoogleLoginButton({ userDetails, setStudentData }) {
   const [students, setStudents] = useState([]);
+  const [settings, setSettings] = useState([]);
   const navigate = useNavigate();
   // console.log("GoogleLoginButton: ", userDetails);
 
@@ -17,6 +18,15 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
       setStudents(response.data);
     } catch (error) {
       console.error("Error fetching students:", error);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getAppSettings");
+      setSettings(response.data);
+    } catch (error) {
+      console.error("Error fetching Settings:", error);
     }
   };
 
@@ -62,6 +72,7 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
       ...validatedStudent,
       category: userDetails.category,
       picture: decoded.picture,
+      appName: settings.appName,
     };
 
     // Store updated user data in localStorage
@@ -77,6 +88,7 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
 
   useEffect(() => {
     fetchStudents();
+    fetchSettings();
   }, []);
 
   return <GoogleLogin onSuccess={handleSuccess} onError={handleFailure} />;

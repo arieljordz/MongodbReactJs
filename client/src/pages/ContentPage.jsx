@@ -10,6 +10,7 @@ const ContentPage = () => {
   const {
     theme,
     contents,
+    categories,
     fetchContents,
     searchTerm,
     setSearchTerm,
@@ -76,7 +77,7 @@ const ContentPage = () => {
                 <SearchFilter
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
-                  searchKey="title"
+                  searchKey="title or category"
                 />
               </div>
             </div>
@@ -112,6 +113,7 @@ const ContentPage = () => {
       {/* Content Modal */}
       <ContentModal
         theme={theme}
+        categories={categories}
         onChange={handleChange}
         onSubmit={handleSubmit}
         onClose={handleClose}

@@ -17,15 +17,29 @@ function HomePage({ moveToNextStep, allowedPath }) {
   } = useTheme();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(null);
+  const [isActiveCategory, setIsActiveCategory] = useState(null);
   const [progressExist, setProgressExist] = useState(false);
 
   // console.log("HomePage: ", allowedPath);
-  // console.log("studentData: ", studentData);
+  console.log("studentData: ", studentData);
   // console.log("progress: ", progress);
 
   useEffect(() => {
     fetchProgress();
+    fetchActiveCategory();
   }, []);
+
+  const fetchActiveCategory = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/getCategoryActive/${studentData.category}`
+      );
+      setIsActiveCategory(response.data.isActive);
+      // console.log("IsActiveCategory: ", response.data.isActive);
+    } catch (error) {
+      console.error("Error fetching active category:", error);
+    }
+  };
 
   const fetchData = async (isDone) => {
     const response = await axios.get(
@@ -82,28 +96,34 @@ function HomePage({ moveToNextStep, allowedPath }) {
 
   const handleStartExercises = async () => {
     try {
-      if (progressExist) {
-        console.log("Progress already exists:", progressExist);
-        moveToNextStep();
-        navigate("/student/results");
-      }
-
-      if (!progress) {
-        // ✅ Create progress if it doesn't exist
-        const newProgress = await createProgress(
-          studentData?._id,
-          studentData?.category
-        );
-        if (newProgress) {
-          setProgress(newProgress);
-          console.log("Created and started new progress:", newProgress);
+      if (isActiveCategory) {
+        if (progressExist) {
+          console.log("Progress already exists:", progressExist);
+          moveToNextStep();
+          navigate("/student/results");
         }
-      } else {
-        console.log("Starting existing progress:", progress);
-      }
 
-      moveToNextStep();
-      navigate("/student/exercises");
+        if (!progress) {
+          // ✅ Create progress if it doesn't exist
+          const newProgress = await createProgress(
+            studentData?._id,
+            studentData?.category
+          );
+          if (newProgress) {
+            setProgress(newProgress);
+            console.log("Created and started new progress:", newProgress);
+          }
+        } else {
+          console.log("Starting existing progress:", progress);
+        }
+
+        moveToNextStep();
+        navigate("/student/exercises");
+      } else {
+        localStorage.removeItem("user");
+        localStorage.removeItem("allowedPath");
+        window.location.href = "/";
+      }
     } catch (error) {
       console.error("Error starting exercises:", error);
     }
@@ -129,31 +149,34 @@ function HomePage({ moveToNextStep, allowedPath }) {
             theme === "dark" ? "dark-mode text-white" : ""
           }`}
         >
-          <p className="lead">
-            Learning is a journey, and every test is a step forward. Stay
-            confident, trust yourself, and give it your best! 💡✨
-          </p>
-
-          {/* Local Image */}
-          <div className="my-3">
-            <img
-              src="https://source.unsplash.com/600x300/?study,learning"
-              alt="Motivational Study"
-              className="img-fluid rounded shadow"
-              style={{ maxWidth: "100%", height: "auto" }}
-            />
-          </div>
+          {isActiveCategory ? (
+            <p className="lead">
+              Learning is a journey, and every test is a step forward. Stay
+              confident, trust yourself, and give it your best! 💡✨
+            </p>
+          ) : (
+            <p className="lead">
+              Learning is a journey, and every test is a step forward. Stay
+              confident, trust yourself, and give it your best! 💡✨
+              <br />
+              <br />
+              Your selected category is inactive, please log in again using an
+              active category. 🔄✅
+            </p>
+          )}
 
           {/* Start Test Button */}
           <button
             className={`btn ${btnBgColor} mt-3 px-4 py-2 rounded-lg shadow-sm`}
             onClick={handleStartExercises}
           >
-            {progressExist
-              ? "Preview Exercises 📚"
-              : progress
-              ? "Continue Your Test 📚"
-              : "Start Your Test 📚"}
+            {isActiveCategory
+              ? progressExist
+                ? "Preview Exercises 📚"
+                : progress
+                ? "Continue Your Test 📚"
+                : "Start Your Test 📚"
+              : "👍 OK"}
           </button>
         </div>
       </div>

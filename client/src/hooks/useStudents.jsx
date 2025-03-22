@@ -159,7 +159,7 @@ const useStudents = () => {
 
   // 🔍 Filter and Sort Students
   const filteredData = students.filter((student) =>
-    `${student.firstname} ${student.lastname}`
+    `${student.firstname} ${student.lastname} ${student.userType}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );

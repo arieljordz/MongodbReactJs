@@ -32,7 +32,7 @@ const QuestionTable = ({
               style={{ cursor: "pointer" }}
             >
               <h5 className="mb-0">
-                {index + 1}. {content.title || "Untitled"}
+                {index + 1}. {content.title.toUpperCase() || "Untitled"}
               </h5>
 
               <i

@@ -2,6 +2,7 @@ import React from "react";
 
 function ContentModal({
   theme,
+  categories,
   onChange,
   onSubmit,
   onClose,
@@ -76,20 +77,21 @@ function ContentModal({
                   placeholder="Enter Link"
                 />
               </div>
+              {/* Category Selection */}
               <div className="mb-3">
-                <label htmlFor="category" className="form-label">
-                  Category
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="category"
+                <label className="form-label">Category</label>
+                <select
+                  className="form-select"
                   name="category"
                   value={formData.category}
                   onChange={onChange}
-                  required
-                  placeholder="Enter Category"
-                />
+                >
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat.description}>
+                      {cat.description}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="d-flex justify-content-end">
                 <button

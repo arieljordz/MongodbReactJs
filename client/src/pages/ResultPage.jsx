@@ -97,7 +97,7 @@ const ResultPage = () => {
         <div
           className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
         >
-          <h2 className="card-title font-weight-bold m-0">🎯 Results!</h2>
+          <h2 className="card-title font-weight-bold m-0">🎯 Results</h2>
         </div>
         <div
           className={`card-body ${

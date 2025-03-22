@@ -9,6 +9,7 @@ const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
 const ProgressModel = require("./models/Progress");
 const AppSettingsModel = require("./models/AppSettings");
+const CategoryModel = require("./models/Category");
 const wss = new WebSocket.Server({ port: 8080 }); // Run WebSocket on port 8080
 
 const app = express();
@@ -402,13 +403,16 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
 // Route to save or update AppSettings
 app.post("/saveAppSettings", async (req, res) => {
   try {
-    const { timeDuration, isEnabled } = req.body;
+    const { timeDuration, appName, isEnabled } = req.body;
+
+    // console.log("appName:", appName);
 
     const existingSettings = await AppSettingsModel.findOne();
 
     if (existingSettings) {
       // Update existing settings
       existingSettings.timeDuration = timeDuration;
+      existingSettings.appName = appName;
       existingSettings.isEnabled = isEnabled;
       await existingSettings.save();
       return res
@@ -418,6 +422,7 @@ app.post("/saveAppSettings", async (req, res) => {
       // Create new settings if none exist
       const newSettings = await AppSettingsModel.create({
         timeDuration,
+        appName,
         isEnabled,
       });
       return res.status(201).json({ message: "Settings created", newSettings });
@@ -426,6 +431,22 @@ app.post("/saveAppSettings", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error saving settings", error: error.message });
+  }
+});
+
+app.get("/getAppSettings", async (req, res) => {
+  try {
+    const settings = await AppSettingsModel.findOne();
+
+    if (settings) {
+      return res.status(200).json(settings);
+    } else {
+      return res.status(404).json({ message: "No settings found" });
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error retrieving settings", error: error.message });
   }
 });
 
@@ -460,7 +481,10 @@ app.post("/createProgress", async (req, res) => {
     const timeLeft = appSettings ? appSettings.timeDuration * 60 : 600;
 
     // Fetch content for the given category
-    const categoryContents = await ContentModel.find({ category });
+    const categoryContents = await ContentModel.find({
+      category: { $regex: `^${category}$`, $options: "i" },
+    });
+
     if (!categoryContents.length)
       return res
         .status(404)
@@ -537,7 +561,7 @@ app.get("/getProgress/:studentId/:category/:isDone", async (req, res) => {
 
     const progress = await ProgressModel.findOne({
       studentId: studentObjectId,
-      category,
+      category: { $regex: `^${category}$`, $options: "i" }, // Case-insensitive category search
       isDone: isDoneBoolean,
     })
       .populate("progress.contentId")
@@ -651,6 +675,122 @@ app.get("/getAllResults/:category/:isDone", async (req, res) => {
   } catch (error) {
     console.error("Error fetching progress records:", error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// File Maintenance
+app.post("/saveCategory", async (req, res) => {
+  try {
+    const { description } = req.body;
+
+    // Check if category with the same description (case-insensitive) already exists
+    const existingCategory = await CategoryModel.findOne({
+      description: { $regex: `^${description}$`, $options: "i" },
+    });
+
+    if (existingCategory) {
+      return res
+        .status(400)
+        .json({ message: "Category with this description already exists." });
+    }
+
+    // Create new category if description is unique
+    const newCategory = await CategoryModel.create(req.body);
+    res.status(201).json(newCategory);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating category", error: error.message });
+  }
+});
+
+app.put("/updateActiveCategory/:description", async (req, res) => {
+  try {
+    const { description } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== "boolean") {
+      return res
+        .status(400)
+        .json({ message: "Invalid isActive value, must be boolean" });
+    }
+
+    // Set all categories' isActive to false before updating the selected category
+    await CategoryModel.updateMany({}, { isActive: false });
+
+    // Find category by description (case-insensitive) and update isActive status
+    const updatedCategory = await CategoryModel.findOneAndUpdate(
+      { description: { $regex: `^${description}$`, $options: "i" } }, // Case-insensitive search
+      { isActive: true }, // Ensure the selected category is active
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Category updated successfully", updatedCategory });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating category", error: error.message });
+  }
+});
+
+app.get("/getCategories", async (req, res) => {
+  try {
+    const categories = await CategoryModel.find();
+    res.status(200).json(categories);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching categories", error: error.message });
+  }
+});
+
+app.get("/getCategory/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Category ID" });
+    }
+
+    const category = await CategoryModel.findById(id);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    res.status(200).json(category);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching category", error: error.message });
+  }
+});
+
+app.get("/getCategoryActive/:description", async (req, res) => {
+  try {
+    const { description } = req.params;
+
+    // Find category case-insensitively
+    const category = await CategoryModel.findOne({
+      description: { $regex: `^${description}$`, $options: "i" },
+    });
+
+    if (!category) {
+      return res
+        .status(404)
+        .json({ message: "Category not found", isActive: false });
+    }
+
+    res.json({ isActive: category.isActive });
+  } catch (error) {
+    console.error("Error checking category status:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

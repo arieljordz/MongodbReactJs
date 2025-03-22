@@ -76,7 +76,7 @@ const AccountPage = () => {
                 <SearchFilter
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
-                  searchKey="name"
+                  searchKey="firstname, lastname or role"
                 />
               </div>
             </div>

@@ -88,6 +88,7 @@ body[data-theme="light"] {
 
   .card-dark {
     background-color: #333 !important;
+    color: white !important; 
   }
   
   .card-primary {
@@ -124,6 +125,7 @@ body[data-theme="light"] {
 
   .btn-dark {
     background-color: #333 !important;
+    color: white !important; 
   }
   
   .btn-primary {

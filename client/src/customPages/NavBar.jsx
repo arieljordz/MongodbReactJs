@@ -5,19 +5,25 @@ import Settings from "./Settings";
 import UserProfileModal from "../modals/UserProfileModal";
 
 function NavBar({ studentData, moveToNextStep, allowedPath }) {
-  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } =
-    useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const [showModal, setShowModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   // console.log("NavBar: ", studentData);
 
   const handleLogout = () => {
-    console.log("User logged out! Implement logout logic here.");
+    // console.log("User logged out! Implement logout logic here.");
     localStorage.removeItem("user");
     localStorage.removeItem("allowedPath");
     // localStorage.removeItem("progress");
 
-    localStorage.setItem("allowedPath", "/student/home");
+    // localStorage.setItem("allowedPath", "/student/home");
     // moveToNextStep();
     window.location.href = "/";
   };
@@ -43,7 +49,9 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
     <div>
       <nav className={`navbar navbar-expand-lg fixed-top ${navBgColor}`}>
         <div className="container">
-          <label className="navbar-brand">E-Learning</label>
+          <label className="navbar-brand">
+            {studentData ? studentData.appName : "My App"}
+          </label>
 
           {/* Navbar Toggler for Mobile View */}
           <button
@@ -98,7 +106,7 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
                     className="nav-link"
                     onClick={() => handleClick("/admin/appsettings")}
                   >
-                    AppSettings
+                    App Settings
                   </Link>
                 </li>
               </ul>

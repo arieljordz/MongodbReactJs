@@ -1,12 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Header from "../customPages/Header";
 import { useTheme } from "../customPages/ThemeContext";
-import DarkModeTheme from "../appsettings/DarkModeTheme";
-import NavBarColor from "../appsettings/NavBarColor";
-import TimeDuration from "../appsettings/TimeDuration";
-import Category from "../appsettings/Category";
+import AppSettignsTab from "../appsettings/AppSettignsTab";
 
 const AppSettingsPage = () => {
   const {
@@ -17,19 +14,53 @@ const AppSettingsPage = () => {
     cardBgColor,
     btnBgColor,
   } = useTheme();
-  const [timeDuration, setTimeDuration] = useState("");
-  const [category, setCategory] = useState("");
 
-  const handleSave = async (e) => {
+  const [timeDuration, setTimeDuration] = useState("");
+  const [appName, setAppName] = useState("");
+  const [settings, setSettings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [category, setCategory] = useState("");
+  const [fmCategory, setFMCategory] = useState("");
+
+  useEffect(() => {
+    fetchSettings();
+    fetchCategories();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getAppSettings");
+      setSettings(response.data);
+      setAppName(response.data.appName || "");
+      setTimeDuration(response.data.timeDuration || "");
+    } catch (error) {
+      console.error("Error fetching Settings:", error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getCategories");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching Settings:", error);
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
     const duration = Number(timeDuration);
 
     if (!duration || isNaN(duration) || duration <= 0) {
-      alert("Please enter a valid time duration.");
+      toast.warning("Please enter a valid time duration.", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
       return;
     }
 
-    const formData = { timeDuration: duration, category };
+    const formData = { timeDuration: duration, appName: appName };
 
     try {
       await axios.post("http://localhost:3001/saveAppSettings", formData, {
@@ -47,55 +78,79 @@ const AppSettingsPage = () => {
     }
   };
 
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+
+    if (!fmCategory?.trim()) {
+      toast.warning("Category description cannot be empty!", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+      return;
+    }
+
+    const formData = { description: fmCategory, isActive: false };
+    try {
+      await axios.post("http://localhost:3001/saveCategory", formData, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      toast.success("Category saved!", {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      toast.warning(error.response?.data?.message, {
+        autoClose: 2000,
+        position: "top-right",
+        closeButton: true,
+      });
+    }
+  };
+
   return (
     <div className={`container mt-6 ${theme}`}>
       <Header levelOne="Home" levelTwo="App Settings" />
 
-      <div className="row justify-content-center">
-        <div className="col-md-6">
-          <div className={`card card-${theme} shadow-lg rounded-lg`}>
-            {/* Card Header */}
-            <div
-              className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
-            >
-              <h2 className="card-title font-weight-bold m-0">
-                ⚙️ App Settings
-              </h2>
-            </div>
+      <div
+        className={`card shadow-lg rounded-lg text-center mx-auto card-${theme}`}
+      >
+        {/* Card Header */}
+        <div
+          className={`card-header ${cardBgColor} py-3 d-flex justify-content-between`}
+        >
+          <h2 className="card-title font-weight-bold m-0">⚙️ App Settings</h2>
+        </div>
 
-            {/* Card Body */}
-            <div
-              className={`card-body ${
-                theme === "dark" ? "dark-mode text-white" : ""
-              }`}
-            >
-              <div className="d-flex justify-content-center">
-                {/* Left Column - Sliders */}
-                <div className="col-md-6 d-flex flex-column">
-                  <DarkModeTheme theme={theme} toggleTheme={toggleTheme} />
-                </div>
-                {/* Right Column - Inputs */}
-                <div className="col-md-6 d-flex flex-column">
-                  <TimeDuration
-                    timeDuration={timeDuration}
-                    setTimeDuration={setTimeDuration}
-                  />
-                  <NavBarColor
-                    navBgColor={navBgColor}
-                    toggleNavBar={toggleNavBar}
-                  />
-                  <Category category={category} setCategory={setCategory} />
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <div class="d-flex justify-content-end mt-3">
-                <button className={`btn ${btnBgColor}`} onClick={handleSave}>
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Card Body */}
+        <div
+          className={`card-body ${
+            theme === "dark" ? "dark-mode text-white" : ""
+          }`}
+        >
+          <AppSettignsTab
+            settings={settings}
+            categories={categories}
+            theme={theme}
+            cardBgColor={cardBgColor}
+            toggleTheme={toggleTheme}
+            appName={appName}
+            setAppName={setAppName}
+            timeDuration={timeDuration}
+            setTimeDuration={setTimeDuration}
+            navBgColor={navBgColor}
+            toggleNavBar={toggleNavBar}
+            category={category}
+            setCategory={setCategory}
+            btnBgColor={btnBgColor}
+            onSaveSettings={handleSaveSettings}
+            onSaveCategory={handleSaveCategory}
+            fmCategory={fmCategory}
+            setFMCategory={setFMCategory}
+          />
         </div>
       </div>
     </div>

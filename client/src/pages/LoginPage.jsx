@@ -1,15 +1,40 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import GoogleLoginButton from "../customPages/GoogleLoginButton";
 import { useTheme } from "../customPages/ThemeContext";
-import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function LoginPage({ setStudentData }) {
-  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } = useTheme();
-  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const [categories, setCategories] = useState([]);
   const [userDetails, setUserDetails] = useState({
     userType: "student",
     category: "",
   });
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    // Set default active category when categories change
+    const activeCat = categories.find((cat) => cat.isActive);
+    if (activeCat) {
+      setUserDetails((prev) => ({
+        ...prev,
+        category: activeCat.description,
+      }));
+    }
+  }, [categories]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getCategories");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,9 +45,7 @@ function LoginPage({ setStudentData }) {
   };
 
   return (
-    <div
-      className={`d-flex flex-column justify-content-center align-items-center vh-100 bg-light${theme}`}
-    >
+    <div className={`d-flex flex-column justify-content-center align-items-center vh-100 bg-light${theme}`}>
       <div className="card shadow p-4 text-start" style={{ width: "350px" }}>
         <h3 className="mb-4 text-center">Login</h3>
 
@@ -49,19 +72,16 @@ function LoginPage({ setStudentData }) {
             value={userDetails.category}
             onChange={handleChange}
           >
-            <option value="">Select Category</option>
-            <option value="english">English</option>
-            <option value="math">Math</option>
-            <option value="science">Science</option>
-            <option value="history">History</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat.description}>
+                {cat.description}
+              </option>
+            ))}
           </select>
         </div>
 
         {/* Google Login Button */}
-        <GoogleLoginButton
-          userDetails={userDetails}
-          setStudentData={setStudentData}
-        />
+        <GoogleLoginButton userDetails={userDetails} setStudentData={setStudentData} />
       </div>
     </div>
   );

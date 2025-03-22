@@ -24,6 +24,7 @@ const useContents = () => {
   const [mode, setMode] = useState("ADD");
   const [selectedContent, setSelectedContent] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const initialFormState = {
     title: "",
@@ -36,6 +37,7 @@ const useContents = () => {
 
   useEffect(() => {
     fetchContents();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -52,6 +54,15 @@ const useContents = () => {
       setContents(data);
     } catch (error) {
       console.error("Error fetching contents:", error);
+    }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/getCategories");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
     }
   }, []);
 
@@ -161,7 +172,6 @@ const useContents = () => {
     }
     setSelectedRow(null);
     setSelectedContent(null);
-    setActiveDropdown(null);
   };
 
   const handleClose = () => {
@@ -229,6 +239,7 @@ const useContents = () => {
   return {
     theme,
     contents,
+    categories,
     fetchContents,
     searchTerm,
     setSearchTerm,
