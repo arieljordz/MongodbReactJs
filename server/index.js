@@ -25,7 +25,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Connect to MongoDB (local, without authentication)
-const mongoURI = "mongodb://127.0.0.1:27017/reactjsmongodb";
+// const mongoURI = "mongodb://127.0.0.1:27017/reactjsmongodb";
+const mongoURI = "mongodb+srv://arieljordz:OhFF8xJLKwSxhCH0@cluster0.7fotz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+
 mongoose
   .connect(mongoURI)
   .then(() => console.log("Connected to local MongoDB"))
