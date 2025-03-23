@@ -18,7 +18,7 @@ app.use(express.json());
 
 const corsOptions = {
   // origin: "http://localhost:5173",
-  origin: "https://mongodb-react-js.vercel.app/",
+  origin: "https://mongodb-react-js.vercel.app",
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type",
 };
@@ -28,7 +28,7 @@ app.use(cors(corsOptions));
 // Connect to MongoDB (local, without authentication)
 // const mongoURI = "mongodb://127.0.0.1:27017/reactjsmongodb";
 const mongoURI =
-  "mongodb+srv://arieljordz:nyUVHL1LQR8gPYj2@cluster0.7fotz.mongodb.net/mongodb_reactjs?retryWrites=true&w=majority&appName=Cluster0";
+  "mongodb+srv://arieljordz:uzLlQQs7WjmRdjg1@cluster0.7fotz.mongodb.net/mongodb_reactjs?retryWrites=true&w=majority&appName=Cluster0";
 
 mongoose
   .connect(mongoURI)

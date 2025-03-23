@@ -241,7 +241,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
     } else if (isPartiallyCorrect) {
       toast.info("⚠️ Partially correct! Some answers are right.");
     } else {
-      toast.error("❌ Incorrect answer. Try again!");
+      toast.error("❌ Incorrect answer!");
     }
   };
 
