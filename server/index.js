@@ -18,7 +18,7 @@ const wss = new WebSocket.Server({ port: 8080 }); // Run WebSocket on port 8080
 const app = express();
 
 // Use environment variables
-const BASE_URL = process.env.BASE_URL || "https://mongodb-react-js.vercel.app";
+// const BASE_URL = process.env.BASE_URL || "https://mongodb-react-js.vercel.app";
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -31,24 +31,51 @@ app.use(express.json());
 //   allowedHeaders: "Content-Type",
 // };
 
+// console.log("MONGO_URI: ", MONGO_URI);
+
 // ✅ Better CORS Handling
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",  
-    "https://mongodb-react-js.vercel.app"
-  ],
+  origin: ["http://localhost:5173", "https://mongodb-react-js.vercel.app"],
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type",
 };
 app.use(cors(corsOptions));
 
-
 // ✅ MongoDB Connection with Error Handling
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("Connected to local MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
-  
+// mongoose
+//   .connect(MONGO_URI)
+//   .then(() => console.log("Connected to local MongoDB"))
+//   .catch((err) => console.error("MongoDB connection error:", err));
+
+// mongoose
+//   .connect(MONGO_URI, {
+//     serverSelectionTimeoutMS: 30000, // Increase timeout to 30s
+//   })
+//   .then(() => console.log("✅ Connected to MongoDB Compass"))
+//   .catch((err) => {
+//     console.error("❌ MongoDB Connection Error:", err);
+//     process.exit(1); // Exit process if unable to connect
+//   });
+
+// mongoose.connection.on("error", (err) => {
+//   console.error("🔥 MongoDB Connection Error (after initial connection):", err);
+// });
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 30000, // Wait longer before failing
+    });
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  }
+};
+
+connectDB();
+
+
 // Dsiplay server is running
 app.get("/", (req, res) => {
   res.send("Server is running!");
