@@ -1,109 +1,79 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
-const WebSocket = require("ws");
-const url = require("url");
-const mongoose = require("mongoose");
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const mongoose = require("mongoose");
+const { WebSocketServer } = require("ws");
 const { ObjectId } = require("mongodb");
+const url = require("url");
+
+// Import Models
 const PersonModel = require("./models/Person");
 const ContentModel = require("./models/Contents");
 const QuestionModel = require("./models/Questions");
 const ProgressModel = require("./models/Progress");
 const AppSettingsModel = require("./models/AppSettings");
 const CategoryModel = require("./models/Category");
-const wss = new WebSocket.Server({ port: 8080 }); // Run WebSocket on port 8080
 
+// Initialize Express App & HTTP Server
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: "/ws" });
 
-// Use environment variables
-// const BASE_URL = process.env.BASE_URL || "https://mongodb-react-js.vercel.app";
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
+// Middleware
 app.use(express.json());
-// app.use(cors());
-
-// const corsOptions = {
-//   origin: BASE_URL,
-//   methods: "GET,POST,PUT,DELETE",
-//   allowedHeaders: "Content-Type",
-// };
-
-// console.log("MONGO_URI: ", MONGO_URI);
-
-// ✅ Better CORS Handling
-const corsOptions = {
+app.use(cors({
   origin: ["http://localhost:5173", "https://e-learning-dun-phi.vercel.app"],
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type",
-};
-app.use(cors(corsOptions));
+}));
 
+// Connect to MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 30000, // Wait longer before failing
-    });
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 30000 });
     console.log("✅ Connected to MongoDB Atlas");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err);
     process.exit(1);
   }
 };
-
 connectDB();
 
+// Root Route
+app.get("/", (req, res) => res.send("Server is running!"));
 
-// Dsiplay server is running
-app.get("/", (req, res) => {
-  res.send("Server is running!");
-});
-
-// ✅ WebSocket Handling
+// WebSocket Handling
 wss.on("connection", async (ws, req) => {
-  const queryParams = url.parse(req.url, true).query;
-  const progressId = queryParams.progressId;
+  const { progressId } = url.parse(req.url, true).query;
+  if (!progressId || !ObjectId.isValid(progressId)) return ws.close();
 
-  if (!progressId || !ObjectId.isValid(progressId)) {
-    ws.close();
-    return;
-  }
-
-  console.log(`Client connected: Student ID = ${progressId}`);
+  console.log(`✅ Client connected: Student ID = ${progressId}`);
 
   let progress = await ProgressModel.findOne({ _id: progressId });
+  let timeLeft = progress?.timeLeft ?? 0;
+  ws.send(JSON.stringify({ timeLeft }));
 
-  console.log("progress timeLeft:", progress?.timeLeft);
-  let timeLeft = progress?.timeLeft ?? 0; // ✅ Get saved timeLeft or default to 600
-
-  ws.send(JSON.stringify({ timeLeft })); // ✅ Send latest timeLeft to client on connect
-
-  // Countdown logic (update DB every 10s to reduce load)
   const interval = setInterval(async () => {
-    if (timeLeft <= 0) {
-      clearInterval(interval);
-      return;
-    }
-
+    if (timeLeft <= 0) return clearInterval(interval);
     timeLeft--;
 
-    // Send updated timeLeft to all connected clients
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
+    wss.clients.forEach(client => {
+      if (client.readyState === ws.OPEN) {
         client.send(JSON.stringify({ timeLeft }));
       }
     });
 
-    // Save timeLeft to database every 10 seconds
     if (timeLeft % 2 === 0) {
       await ProgressModel.updateOne({ _id: progressId }, { timeLeft });
     }
   }, 1000);
 
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log("🔴 Client disconnected");
     clearInterval(interval);
   });
 });
@@ -826,4 +796,5 @@ app.get("/getCategoryActive/:description", async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
