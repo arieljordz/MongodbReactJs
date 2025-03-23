@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 
 const Timer = ({ progressId, onTimeUp, timeLeft, setTimeLeft }) => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
+  const WS_URL = API_URL.replace(/^http/, "ws");
 
   useEffect(() => {
     if (!progressId) return;
 
-    const socket = new WebSocket(`ws://localhost:8080?progressId=${progressId}`);
+    const socket = new WebSocket(`${WS_URL}/?progressId=${progressId}`);
 
     socket.onopen = () => {
       console.log("Connected to WebSocket");

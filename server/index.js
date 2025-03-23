@@ -41,26 +41,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// ✅ MongoDB Connection with Error Handling
-// mongoose
-//   .connect(MONGO_URI)
-//   .then(() => console.log("Connected to local MongoDB"))
-//   .catch((err) => console.error("MongoDB connection error:", err));
-
-// mongoose
-//   .connect(MONGO_URI, {
-//     serverSelectionTimeoutMS: 30000, // Increase timeout to 30s
-//   })
-//   .then(() => console.log("✅ Connected to MongoDB Compass"))
-//   .catch((err) => {
-//     console.error("❌ MongoDB Connection Error:", err);
-//     process.exit(1); // Exit process if unable to connect
-//   });
-
-// mongoose.connection.on("error", (err) => {
-//   console.error("🔥 MongoDB Connection Error (after initial connection):", err);
-// });
-
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URI, {
