@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import { useNavigate } from "react-router-dom";
 import Settings from "./Settings";
 import UserProfileModal from "../modals/UserProfileModal";
 
@@ -13,6 +14,7 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
     cardBgColor,
     btnBgColor,
   } = useTheme();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   // console.log("NavBar: ", studentData);
@@ -38,8 +40,9 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
   };
 
   const handleClick = (path) => {
+    console.log("NEW PATH: ", path);
     moveToNextStep(); // Call your function
-    // navigate(path); // Navigate after function execution
+    navigate(path); // Navigate after function execution
     setTimeout(() => {
       window.location.href = path; // Navigate programmatically
     }, 100);
@@ -70,42 +73,47 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
             {studentData?.userType === "teacher" && (
               <ul className="navbar-nav me-auto">
                 <li className="nav-item">
-                  <Link
+                  {/* <Link
                     className="nav-link"
                     onClick={() => handleClick("/admin/results")}
-                  >
+                  > */}
+                  <Link className="nav-link" to="/admin/results">
                     Results
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link
+                  {/* <Link
                     className="nav-link"
                     onClick={() => handleClick("/admin/accounts")}
-                  >
+                  > */}
+                  <Link className="nav-link" to="/admin/accounts">
                     Students
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link
+                  {/* <Link
                     className="nav-link"
                     onClick={() => handleClick("/admin/contents")}
-                  >
+                  > */}
+                  <Link className="nav-link" to="/admin/contents">
                     Contents
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link
+                  {/* <Link
                     className="nav-link"
                     onClick={() => handleClick("/admin/questions")}
-                  >
+                  > */}
+                  <Link className="nav-link" to="/admin/questions">
                     Questions
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link
+                  {/* <Link
                     className="nav-link"
                     onClick={() => handleClick("/admin/appsettings")}
-                  >
+                  > */}
+                  <Link className="nav-link" to="/admin/appsettings">
                     App Settings
                   </Link>
                 </li>
