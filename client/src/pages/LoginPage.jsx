@@ -4,6 +4,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import axios from "axios";
 
 function LoginPage({ setStudentData }) {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const { theme } = useTheme();
   const [categories, setCategories] = useState([]);
   const [userDetails, setUserDetails] = useState({
@@ -29,7 +30,7 @@ function LoginPage({ setStudentData }) {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getCategories");
+      const response = await axios.get(`${API_URL}/getCategories`);
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error);

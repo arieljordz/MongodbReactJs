@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../customPages/Header";
 
 function HomePage({ moveToNextStep, allowedPath }) {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const {
     theme,
@@ -32,7 +33,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
   const fetchActiveCategory = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/getCategoryActive/${studentData.category}`
+        `${API_URL}/getCategoryActive/${studentData.category}`
       );
       setIsActiveCategory(response.data.isActive);
       // console.log("IsActiveCategory: ", response.data.isActive);
@@ -43,7 +44,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
 
   const fetchData = async (isDone) => {
     const response = await axios.get(
-      `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${isDone}`
+      `${API_URL}/getProgress/${studentData._id}/${studentData.category}/${isDone}`
     );
     return response.data || null;
   };
@@ -75,8 +76,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:3001/createProgress",
+      const response = await axios.post(`${API_URL}/createProgress`,
         {
           studentId, // ✅ Send in the request body
           category,

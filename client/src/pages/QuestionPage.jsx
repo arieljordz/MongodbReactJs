@@ -5,6 +5,7 @@ import Header from "../customPages/Header";
 import QuestionTable from "../tables/QuestionTable";
 
 const QuestionPage = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     contents,

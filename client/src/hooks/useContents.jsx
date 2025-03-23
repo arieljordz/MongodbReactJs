@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useContents = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     toggleTheme,
@@ -35,6 +36,8 @@ const useContents = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
+  console.log("API URL:", API_URL);
+
   useEffect(() => {
     fetchContents();
     fetchCategories();
@@ -50,7 +53,7 @@ const useContents = () => {
 
   const fetchContents = useCallback(async () => {
     try {
-      const { data } = await axios.get("http://localhost:3001/getContents/all");
+      const { data } = await axios.get(`${API_URL}/getContents/all`);
       setContents(data);
     } catch (error) {
       console.error("Error fetching contents:", error);
@@ -59,7 +62,7 @@ const useContents = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getCategories");
+      const response = await axios.get(`${API_URL}/getCategories`);
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -107,7 +110,7 @@ const useContents = () => {
 
     if (isConfirmed.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3001/deleteContent/${id}`);
+        await axios.delete(`${API_URL}/deleteContent/${id}`);
         toast.success("content deleted successfully.");
         fetchContents();
       } catch (error) {
@@ -139,7 +142,7 @@ const useContents = () => {
     try {
       if (mode === "ADD") {
         console.log("Add payload:", formData);
-        await axios.post("http://localhost:3001/createContent", formData, {
+        await axios.post(`${API_URL}/createContent`, formData, {
           headers: { "Content-Type": "application/json" },
         });
         toast.success("Content added successfully!", {
@@ -149,13 +152,9 @@ const useContents = () => {
         });
       } else {
         console.log("Update payload:", formData);
-        await axios.put(
-          `http://localhost:3001/updateContent/${formData._id}`,
-          formData,
-          {
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        await axios.put(`${API_URL}/updateContent/${formData._id}`, formData, {
+          headers: { "Content-Type": "application/json" },
+        });
         toast.success("Content updated successfully!", {
           autoClose: 2000,
           position: "top-right",

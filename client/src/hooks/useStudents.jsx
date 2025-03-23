@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useStudents = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     toggleTheme,
@@ -50,7 +51,7 @@ const useStudents = () => {
 
   const fetchStudents = useCallback(async () => {
     try {
-      const { data } = await axios.get("http://localhost:3001/getPersons/all");
+      const { data } = await axios.get(`${API_URL}/getPersons/all`);
       setStudents(data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -98,7 +99,7 @@ const useStudents = () => {
 
     if (isConfirmed.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3001/deletePerson/${id}`);
+        await axios.delete(`${API_URL}/deletePerson/${id}`);
         toast.success("Student deleted successfully.");
         fetchStudents();
       } catch (error) {
@@ -128,16 +129,14 @@ const useStudents = () => {
 
     try {
       if (mode === "ADD") {
-        await axios.post("http://localhost:3001/createPerson", formData, {
+        await axios.post(`${API_URL}/createPerson`, formData, {
           headers: { "Content-Type": "application/json" },
         });
         toast.success("Student added successfully!");
       } else {
-        await axios.put(
-          `http://localhost:3001/updatePerson/${formData._id}`,
-          formData,
-          { headers: { "Content-Type": "application/json" } }
-        );
+        await axios.put(`${API_URL}/updatePerson/${formData._id}`, formData, {
+          headers: { "Content-Type": "application/json" },
+        });
         toast.success("Student updated successfully!");
       }
 

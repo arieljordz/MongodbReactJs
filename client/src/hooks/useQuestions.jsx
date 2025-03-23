@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { useTheme } from "../customPages/ThemeContext";
 
 const useQuestions = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     toggleTheme,
@@ -49,7 +50,7 @@ const useQuestions = () => {
 
   const fetchContents = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getContents/all");
+      const response = await axios.get(`${API_URL}/getContents/all`);
       setContents(response.data);
     } catch (error) {
       console.error("Error fetching contents:", error);
@@ -58,9 +59,7 @@ const useQuestions = () => {
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:3001/getQuestions/all"
-      );
+      const response = await axios.get(`${API_URL}/getQuestions/all`);
       const groupedQuestions = response.data.reduce((acc, question) => {
         const { contentId } = question;
         if (!acc[contentId._id]) {
@@ -133,7 +132,7 @@ const useQuestions = () => {
       // console.log(isYesNo.isConfirmed);
       if (isYesNo.isConfirmed) {
         const response = await axios.delete(
-          `http://localhost:3001/deleteQuestion/${questionId}`
+          `${API_URL}/deleteQuestion/${questionId}`
         );
         setMode("DELETE");
         if (response.status === 200) {
@@ -213,7 +212,7 @@ const useQuestions = () => {
       if (mode === "ADD") {
         console.log("Add payload:", sanitizedFormData);
         await axios.post(
-          "http://localhost:3001/createQuestionByContent",
+          `${API_URL}/createQuestionByContent`,
           sanitizedFormData,
           headers
         );
@@ -230,7 +229,7 @@ const useQuestions = () => {
         };
         console.log("Update payload:", updatePayload);
         await axios.put(
-          `http://localhost:3001/updateQuestion/${formData._id}`,
+          `${API_URL}/updateQuestion/${formData._id}`,
           updatePayload,
           headers
         );

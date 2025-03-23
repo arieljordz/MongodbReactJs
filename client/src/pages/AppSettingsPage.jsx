@@ -6,6 +6,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import AppSettignsTab from "../appsettings/AppSettignsTab";
 
 const AppSettingsPage = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     toggleTheme,
@@ -29,7 +30,7 @@ const AppSettingsPage = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getAppSettings");
+      const response = await axios.get(`${API_URL}/getAppSettings`);
       setSettings(response.data);
       setAppName(response.data.appName || "");
       setTimeDuration(response.data.timeDuration || "");
@@ -40,7 +41,7 @@ const AppSettingsPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getCategories");
+      const response = await axios.get(`${API_URL}/getCategories`);
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching Settings:", error);
@@ -63,7 +64,7 @@ const AppSettingsPage = () => {
     const formData = { timeDuration: duration, appName: appName };
 
     try {
-      await axios.post("http://localhost:3001/saveAppSettings", formData, {
+      await axios.post(`${API_URL}/saveAppSettings`, formData, {
         headers: { "Content-Type": "application/json" },
       });
 
@@ -92,7 +93,7 @@ const AppSettingsPage = () => {
 
     const formData = { description: fmCategory, isActive: false };
     try {
-      await axios.post("http://localhost:3001/saveCategory", formData, {
+      await axios.post(`${API_URL}/saveCategory`, formData, {
         headers: { "Content-Type": "application/json" },
       });
 

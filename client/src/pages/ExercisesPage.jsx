@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../customPages/Header";
 
 function ExercisesPage({ moveToNextStep, allowedPath }) {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const {
     theme,
@@ -65,7 +66,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
 
   const fetchData = async (isDone) => {
     const response = await axios.get(
-      `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${isDone}`
+      `${API_URL}/getProgress/${studentData._id}/${studentData.category}/${isDone}`
     );
     return response.data || null;
   };
@@ -196,7 +197,7 @@ function ExercisesPage({ moveToNextStep, allowedPath }) {
 
     try {
       await axios.put(
-        `http://localhost:3001/updateProgress/${progress._id}`,
+        `${API_URL}/updateProgress/${progress._id}`,
         updatedProgress
       );
     } catch (error) {

@@ -1,3 +1,6 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const WebSocket = require("ws");
 const url = require("url");
 const mongoose = require("mongoose");
@@ -13,38 +16,50 @@ const CategoryModel = require("./models/Category");
 const wss = new WebSocket.Server({ port: 8080 }); // Run WebSocket on port 8080
 
 const app = express();
+
+// Use environment variables
+const BASE_URL = process.env.BASE_URL || "https://mongodb-react-js.vercel.app";
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+
 app.use(express.json());
 // app.use(cors());
 
+// const corsOptions = {
+//   origin: BASE_URL,
+//   methods: "GET,POST,PUT,DELETE",
+//   allowedHeaders: "Content-Type",
+// };
+
+// ✅ Better CORS Handling
 const corsOptions = {
-  // origin: "http://localhost:5173",
-  origin: "https://mongodb-react-js.vercel.app",
+  origin: [
+    "http://localhost:5173",  
+    "https://mongodb-react-js.vercel.app"
+  ],
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type",
 };
-
 app.use(cors(corsOptions));
 
-// Connect to MongoDB (local, without authentication)
-// const mongoURI = "mongodb://127.0.0.1:27017/reactjsmongodb";
-const mongoURI =
-  "mongodb+srv://arieljordz:uzLlQQs7WjmRdjg1@cluster0.7fotz.mongodb.net/mongodb_reactjs?retryWrites=true&w=majority&appName=Cluster0";
 
+// ✅ MongoDB Connection with Error Handling
 mongoose
-  .connect(mongoURI)
+  .connect(MONGO_URI)
   .then(() => console.log("Connected to local MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
-
-// 
+  
+// Dsiplay server is running
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+// ✅ WebSocket Handling
 wss.on("connection", async (ws, req) => {
   const queryParams = url.parse(req.url, true).query;
   const progressId = queryParams.progressId;
 
-  if (!progressId) {
+  if (!progressId || !ObjectId.isValid(progressId)) {
     ws.close();
     return;
   }
@@ -804,5 +819,4 @@ app.get("/getCategoryActive/:description", async (req, res) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

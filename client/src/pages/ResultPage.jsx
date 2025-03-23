@@ -6,6 +6,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import Header from "../customPages/Header";
 
 const ResultPage = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const {
     theme,
     toggleTheme,
@@ -32,7 +33,7 @@ const ResultPage = () => {
 
       // Fetch progress from database
       const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${
+        `${API_URL}/getProgress/${studentData._id}/${
           studentData.category
         }/${true}`
       );

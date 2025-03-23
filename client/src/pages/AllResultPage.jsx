@@ -6,8 +6,15 @@ import { useTheme } from "../customPages/ThemeContext";
 import Header from "../customPages/Header";
 
 const AllResultPage = () => {
-  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } =
-    useTheme();
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const [results, setResults] = useState([]);
 
@@ -18,7 +25,7 @@ const AllResultPage = () => {
   const fetchProgress = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/getAllResults/${studentData.category}/${true}`
+        `${API_URL}/getAllResults/${studentData.category}/${true}`
       );
       console.log("response data:", response);
       if (response.data) {

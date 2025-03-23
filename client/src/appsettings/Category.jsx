@@ -2,9 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const API_BASE_URL = "http://localhost:3001";
-
 const Category = ({ categories, category, setCategory }) => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const [activeCategory, setActiveCategory] = useState("");
 
   // Set the active category on component mount or when categories change
@@ -27,7 +26,7 @@ const Category = ({ categories, category, setCategory }) => {
 
     try {
       await axios.put(
-        `${API_BASE_URL}/updateActiveCategory/${selectedCategory}`,
+        `${API_URL}/updateActiveCategory/${selectedCategory}`,
         { description: selectedCategory, isActive: true },
         { headers: { "Content-Type": "application/json" } }
       );

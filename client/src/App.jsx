@@ -9,8 +9,9 @@ import "admin-lte/dist/css/adminlte.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
-const clientId =
-  "1083595131876-m65tgditjmdmg3ait4h01q1q25t7p759.apps.googleusercontent.com";
+const clientId = import.meta.env.VITE_GOOGLE_API_KEY;
+
+// const clientId = "1083595131876-m65tgditjmdmg3ait4h01q1q25t7p759.apps.googleusercontent.com";
 
 function App() {
   return (

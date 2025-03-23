@@ -6,6 +6,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 function GoogleLoginButton({ userDetails, setStudentData }) {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const [students, setStudents] = useState([]);
   const [settings, setSettings] = useState([]);
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
   // Fetch students data
   const fetchStudents = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getPersons/all");
+      const response = await axios.get(`${API_URL}/getPersons/all`);
       setStudents(response.data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -23,7 +24,7 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
 
   const fetchSettings = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/getAppSettings");
+      const response = await axios.get(`${API_URL}/getAppSettings`);
       setSettings(response.data);
     } catch (error) {
       console.error("Error fetching Settings:", error);

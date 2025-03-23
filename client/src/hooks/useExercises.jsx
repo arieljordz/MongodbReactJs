@@ -5,6 +5,7 @@ import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
 const useExercises = () => {
+  const API_URL = import.meta.env.VITE_BASE_API_URL;
   const studentData = JSON.parse(localStorage.getItem("user")) || {};
   const {
     theme,
@@ -66,7 +67,7 @@ const useExercises = () => {
   const updateTimeLeft = async (newTime) => {
     // console.log("newTimeleft:", newTime);
     try {
-      await axios.put(`http://localhost:3001/updateTimeLeft/${progress._id}`, {
+      await axios.put(`${API_URL}/updateTimeLeft/${progress._id}`, {
         timeLeft: newTime,
       });
     } catch (error) {
@@ -77,7 +78,7 @@ const useExercises = () => {
   const fetchData = async (isDone) => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/getProgress/${studentData._id}/${studentData.category}/${isDone}`
+        `${API_URL}/getProgress/${studentData._id}/${studentData.category}/${isDone}`
       );
       console.log(
         `Fetched ${isDone ? "done" : "not yet done"} progress:`,
@@ -225,7 +226,7 @@ const useExercises = () => {
 
     try {
       await axios.put(
-        `http://localhost:3001/updateProgress/${progress._id}`,
+        `${API_URL}/updateProgress/${progress._id}`,
         updatedProgress
       );
     } catch (error) {
