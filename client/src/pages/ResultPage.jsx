@@ -4,6 +4,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { toast } from "react-toastify";
 import { useTheme } from "../customPages/ThemeContext";
 import Header from "../customPages/Header";
+import { getItemWithExpiry } from "../utils/storageUtils";
 
 const ResultPage = () => {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
@@ -15,7 +16,7 @@ const ResultPage = () => {
     cardBgColor,
     btnBgColor,
   } = useTheme();
-  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+  const studentData = getItemWithExpiry("user") || {};
   const [results, setResults] = useState({});
   const [selectedContent, setSelectedContent] = useState(null);
 

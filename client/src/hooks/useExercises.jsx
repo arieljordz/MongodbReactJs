@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 const useExercises = () => {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
-  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+  const studentData = getItemWithExpiry("user") || {};
   const {
     theme,
     toggleTheme,

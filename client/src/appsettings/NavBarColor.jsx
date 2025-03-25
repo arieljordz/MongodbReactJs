@@ -1,9 +1,9 @@
 import React from "react";
 
-const NavBarColor = ({ navBgColor, toggleNavBar }) => {
+const NavBarColor = ({ navBgColor, toggleNavBar, navColor, setNavColor }) => {
   const colors = [
-    "navbar-light",
     "navbar-dark",
+    "navbar-light",
     "navbar-primary",
     "navbar-secondary",
     "navbar-info",
@@ -12,13 +12,20 @@ const NavBarColor = ({ navBgColor, toggleNavBar }) => {
     "navbar-danger",
   ];
 
+  const handleChange = (e) => {
+    const selectedColor = e.target.value;
+    setNavColor(selectedColor);
+    toggleNavBar(selectedColor); 
+  };
+
   return (
     <div className="mb-2 text-left">
       <label className="form-label d-block text-start">Navbar Color (active):</label>
       <select
         className="form-select"
         value={navBgColor}
-        onChange={(e) => toggleNavBar(e.target.value)}
+        onChange={handleChange}
+        // onChange={(e) => toggleNavBar(e.target.value)}
       >
         {colors.map((color) => (
           <option key={color} value={color}>

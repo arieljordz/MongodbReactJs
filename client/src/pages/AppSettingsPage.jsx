@@ -18,6 +18,7 @@ const AppSettingsPage = () => {
 
   const [timeDuration, setTimeDuration] = useState("");
   const [appName, setAppName] = useState("");
+  const [navColor, setNavColor] = useState("");
   const [settings, setSettings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
@@ -61,7 +62,7 @@ const AppSettingsPage = () => {
       return;
     }
 
-    const formData = { timeDuration: duration, appName: appName };
+    const formData = { timeDuration: duration, appName: appName, navColor: navColor };
 
     try {
       await axios.post(`${API_URL}/saveAppSettings`, formData, {
@@ -151,6 +152,8 @@ const AppSettingsPage = () => {
             onSaveCategory={handleSaveCategory}
             fmCategory={fmCategory}
             setFMCategory={setFMCategory}
+            navColor={navColor}
+            setNavColor={setNavColor}
           />
         </div>
       </div>

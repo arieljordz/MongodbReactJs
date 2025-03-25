@@ -25,6 +25,8 @@ function AppSettignsTab({
   fmCategory,
   setFMCategory,
   onSaveCategory,
+  navColor,
+  setNavColor,
 }) {
   const [activeTab, setActiveTab] = useState("appSettings");
 
@@ -69,6 +71,8 @@ function AppSettignsTab({
             onSaveSettings={onSaveSettings}
             category={category}
             setCategory={setCategory}
+            navColor={navColor}
+            setNavColor={setNavColor}
           />
         )}
         {activeTab === "fileMaintenance" && (
@@ -99,6 +103,8 @@ function AppSettings({
   onSaveSettings,
   category,
   setCategory,
+  navColor,
+  setNavColor,
 }) {
   return (
     <div className="container">
@@ -119,7 +125,12 @@ function AppSettings({
             category={category}
             setCategory={setCategory}
           />
-          <NavBarColor navBgColor={navBgColor} toggleNavBar={toggleNavBar} />
+          <NavBarColor
+            navBgColor={navBgColor}
+            toggleNavBar={toggleNavBar}
+            navColor={navColor}
+            setNavColor={setNavColor}
+          />
         </div>
         <div className="col-md-3">
           <DarkModeTheme theme={theme} toggleTheme={toggleTheme} />

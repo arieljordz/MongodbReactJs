@@ -7,10 +7,11 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Header from "../customPages/Header";
+import { getItemWithExpiry } from "../utils/storageUtils";
 
 function ExercisesPage({ moveToNextStep, allowedPath }) {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
-  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+  const studentData = getItemWithExpiry("user") || {};
   const {
     theme,
     toggleTheme,

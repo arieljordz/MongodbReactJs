@@ -20,6 +20,7 @@ import AppSettingsPage from "../pages/AppSettingsPage";
 import LoadingSpinner from "../customPages/LoadingSpinner";
 import PrivateRoute from "./PrivateRoute";
 import PreventBackNavigation from "../customPages/PreventBackNavigation";
+import { getItemWithExpiry } from "../utils/storageUtils";
 
 // Define page access flow
 const studentFlow = ["/student/home", "/student/exercises", "/student/results"];
@@ -34,10 +35,17 @@ const teacherFlow = [
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, toggleTheme, navBgColor, toggleNavBar, cardBgColor, btnBgColor } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    navBgColor,
+    toggleNavBar,
+    cardBgColor,
+    btnBgColor,
+  } = useTheme();
 
   const [studentData, setStudentData] = useState(() => {
-    return JSON.parse(localStorage.getItem("user")) || null;
+    return getItemWithExpiry("user") || null;
   });
 
   const getAllowedFlow = (userType) => {
@@ -45,7 +53,7 @@ const Layout = () => {
   };
 
   const [allowedPath, setAllowedPath] = useState(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getItemWithExpiry("user");
     const savedPath = localStorage.getItem("allowedPath");
     return (
       savedPath || (user?.userType ? getAllowedFlow(user.userType)[0] : "/")
@@ -56,11 +64,6 @@ const Layout = () => {
     if (studentData?.userType) {
       const flow = getAllowedFlow(studentData.userType);
       const savedPath = localStorage.getItem("allowedPath");
-      // const progress = localStorage.getItem("progress");
-
-      // console.log("studentData: ", studentData);
-      // console.log("progress: ", progress);
-      // console.log("savedPath: ", savedPath);
 
       if (!savedPath || flow.indexOf(savedPath) === -1) {
         console.log("Resetting allowedPath to first step", flow[0]);
@@ -100,7 +103,7 @@ const Layout = () => {
 
   useEffect(() => {
     const checkAuth = () => {
-      const user = JSON.parse(localStorage.getItem("user")) || null;
+      const user = getItemWithExpiry("user") || null;
       if (!user?.userType) {
         localStorage.removeItem("user");
         console.log("User is not authenticated. Redirecting...");

@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import jwt_decode from "jwt-decode";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { setItemWithExpiry } from "../utils/storageUtils";
 
 function GoogleLoginButton({ userDetails, setStudentData }) {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
@@ -77,7 +78,10 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
     };
 
     // Store updated user data in localStorage
-    localStorage.setItem("user", JSON.stringify(updatedStudentData));
+    // localStorage.setItem("user", JSON.stringify(updatedStudentData));
+
+    // Save to localStorage with 24-hour expiry (24 * 60 * 60 * 1000 ms)
+    setItemWithExpiry("user", updatedStudentData, 24 * 60 * 60 * 1000);
 
     // Pass student details to parent component
     setStudentData(updatedStudentData);

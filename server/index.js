@@ -81,14 +81,22 @@ wss.on("connection", async (ws, req) => {
 // Person End Points
 app.post("/createPerson", async (req, res) => {
   try {
+    const { email } = req.body;
+    
+    // Check if a person with the same email already exists (case-insensitive)
+    const existingPerson = await PersonModel.findOne({ email: { $regex: `^${email}$`, $options: "i" } });
+    if (existingPerson) {
+      return res.status(400).json({ message: "Email already exists." });
+    }
+    
+    // Create new person if email is unique
     const newPerson = await PersonModel.create(req.body);
     res.status(201).json(newPerson);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating person", error: error.message });
+    res.status(500).json({ message: "Error creating person", error: error.message });
   }
 });
+
 
 app.get("/getPersons/all", async (req, res) => {
   try {
@@ -404,7 +412,7 @@ app.delete("/deleteQuestion/:id", async (req, res) => {
 // Route to save or update AppSettings
 app.post("/saveAppSettings", async (req, res) => {
   try {
-    const { timeDuration, appName, isEnabled } = req.body;
+    const { timeDuration, appName, navColor, isEnabled } = req.body;
 
     // console.log("appName:", appName);
 
@@ -414,6 +422,7 @@ app.post("/saveAppSettings", async (req, res) => {
       // Update existing settings
       existingSettings.timeDuration = timeDuration;
       existingSettings.appName = appName;
+      existingSettings.navColor = navColor;
       existingSettings.isEnabled = isEnabled;
       await existingSettings.save();
       return res
@@ -424,6 +433,7 @@ app.post("/saveAppSettings", async (req, res) => {
       const newSettings = await AppSettingsModel.create({
         timeDuration,
         appName,
+        navColor,
         isEnabled,
       });
       return res.status(201).json({ message: "Settings created", newSettings });
@@ -554,11 +564,11 @@ app.get("/getProgress/:studentId/:category/:isDone", async (req, res) => {
     const studentObjectId = new mongoose.Types.ObjectId(studentId);
     const isDoneBoolean = isDone === "true"; // ✅ Convert string to boolean
 
-    console.log("Fetching progress for:", {
-      studentId,
-      category,
-      isDoneBoolean,
-    });
+    // console.log("Fetching progress for:", {
+    //   studentId,
+    //   category,
+    //   isDoneBoolean,
+    // });
 
     const progress = await ProgressModel.findOne({
       studentId: studentObjectId,
@@ -569,7 +579,7 @@ app.get("/getProgress/:studentId/:category/:isDone", async (req, res) => {
       .populate("progress.answeredQuestions.questionId")
       .exec();
 
-    console.log("Progress fetched:", progress);
+    // console.log("Progress fetched:", progress);
 
     res.json(progress || null);
   } catch (error) {
@@ -658,7 +668,7 @@ app.get("/getAllResults/:category/:isDone", async (req, res) => {
     const { category, isDone } = req.params;
     const isDoneBoolean = isDone === "true"; // Convert string to boolean
 
-    console.log("Fetching progress for:", { category, isDoneBoolean });
+    // console.log("Fetching progress for:", { category, isDoneBoolean });
 
     // Fetch all progress documents that match the given category and isDone status
     const progressRecords = await ProgressModel.find({
@@ -670,7 +680,7 @@ app.get("/getAllResults/:category/:isDone", async (req, res) => {
       .populate("progress.answeredQuestions.questionId")
       .exec();
 
-    console.log("Progress records fetched:", progressRecords);
+    // console.log("Progress records fetched:", progressRecords);
 
     res.json(progressRecords);
   } catch (error) {

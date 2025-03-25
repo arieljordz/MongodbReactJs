@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const AppSettingsSchema = new mongoose.Schema({
   timeDuration: String,
   appName: String,
+  navColor: String,
   isEnabled: { type: Boolean },
   dateAdded: { type: Date, default: Date.now },
 });

@@ -4,10 +4,11 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useTheme } from "../customPages/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../customPages/Header";
+import { getItemWithExpiry } from "../utils/storageUtils";
 
 function HomePage({ moveToNextStep, allowedPath }) {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
-  const studentData = JSON.parse(localStorage.getItem("user")) || {};
+  const studentData = getItemWithExpiry("user") || {};
   const {
     theme,
     toggleTheme,
@@ -22,8 +23,7 @@ function HomePage({ moveToNextStep, allowedPath }) {
   const [progressExist, setProgressExist] = useState(false);
 
   // console.log("HomePage: ", allowedPath);
-  console.log("studentData: ", studentData);
-  // console.log("progress: ", progress);
+  // console.log("studentData: ", studentData);
 
   useEffect(() => {
     fetchProgress();
