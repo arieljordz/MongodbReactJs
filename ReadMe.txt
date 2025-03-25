@@ -14,6 +14,7 @@ npm install react-router-dom
 npm install react-toastify
 npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons
 npm install dotenv
+npm install xlsx
 
 go to src
 remove index.css

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useTheme } from "../customPages/ThemeContext";
 import Header from "../customPages/Header";
 import { getItemWithExpiry } from "../utils/storageUtils";
+import DownloadResults from "../customPages/DownloadResults";
 
 const AllResultPage = () => {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
@@ -99,6 +100,7 @@ const AllResultPage = () => {
             theme === "dark" ? "dark-mode text-white" : ""
           }`}
         >
+          <DownloadResults results={results} btnBgColor={btnBgColor} />
           <ProgressTable progressData={results} theme={theme} />
         </div>
       </div>
