@@ -7,6 +7,12 @@ function Settings({
   onLogout,
   showDropdown,
   setShowDropdown,
+  navBgColor,
+  toggleNavBar,
+  cardBgColor,
+  btnBgColor,
+  navColor,
+  setNavColor,
 }) {
   const dropdownRef = useRef(null); // Reference for detecting outside clicks
 
@@ -26,6 +32,23 @@ function Settings({
 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
+
+  const colors = [
+    "navbar-dark",
+    "navbar-light",
+    "navbar-primary",
+    "navbar-secondary",
+    "navbar-info",
+    "navbar-success",
+    "navbar-warning",
+    "navbar-danger",
+  ];
+
+  const handleChange = (e) => {
+    const selectedColor = e.target.value;
+    setNavColor(selectedColor);
+    toggleNavBar(selectedColor);
+  };
 
   return (
     <>
@@ -53,6 +76,28 @@ function Settings({
               ></i>
               {theme === "dark" ? " Light Mode" : " Dark Mode"}
             </button>
+            <div className="dropdown-item ps-3">
+              <label className="form-label d-block small mb-1">
+                <i className="fas fa-palette"></i> Navbar Color
+              </label>
+              <select
+                className="form-select form-select-sm"
+                style={{ fontSize: "0.85rem", padding: "2px 6px" }} 
+                value={navBgColor}
+                onChange={(e) => {
+                  const selectedColor = e.target.value;
+                  setNavColor(selectedColor);
+                  toggleNavBar(selectedColor);
+                }}
+              >
+                {colors.map((color) => (
+                  <option key={color} value={color}>
+                    {color.replace("navbar-", "").charAt(0).toUpperCase() +
+                      color.replace("navbar-", "").slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               className="dropdown-item btn btn-sm text-danger"
               onClick={onLogout}

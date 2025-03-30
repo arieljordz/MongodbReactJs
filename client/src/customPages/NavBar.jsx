@@ -17,6 +17,7 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [navColor, setNavColor] = useState("");
   // console.log("NavBar: ", studentData);
 
   const handleLogout = () => {
@@ -130,6 +131,12 @@ function NavBar({ studentData, moveToNextStep, allowedPath }) {
               onLogout={handleLogout}
               showDropdown={showDropdown}
               setShowDropdown={setShowDropdown}
+              navBgColor={navBgColor}
+              toggleNavBar={toggleNavBar}
+              cardBgColor={cardBgColor}
+              btnBgColor={btnBgColor}
+              navColor={navColor}
+              setNavColor={setNavColor}
             />
           </div>
         </div>
