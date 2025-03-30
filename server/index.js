@@ -677,7 +677,7 @@ app.get("/getAllResults/:category/:isDone/:isRetake", async (req, res) => {
 
     if (isRetake === "true") {
       isDoneBoolean = [true];
-      isRetakeValue = [false, null];
+      isRetakeValue =  [true, false, null];
     } else if (isRetake === "false") {
       isDoneBoolean = [true, false];
       isRetakeValue = [true, false, null];
