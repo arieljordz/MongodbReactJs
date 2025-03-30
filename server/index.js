@@ -25,11 +25,13 @@ const MONGO_URI = process.env.MONGO_URI;
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: ["http://localhost:5173", "https://e-learning-dun-phi.vercel.app"],
-  methods: "GET,POST,PUT,DELETE",
-  allowedHeaders: "Content-Type",
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://e-learning-dun-phi.vercel.app"],
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type",
+  })
+);
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -61,7 +63,7 @@ wss.on("connection", async (ws, req) => {
     if (timeLeft <= 0) return clearInterval(interval);
     timeLeft--;
 
-    wss.clients.forEach(client => {
+    wss.clients.forEach((client) => {
       if (client.readyState === ws.OPEN) {
         client.send(JSON.stringify({ timeLeft }));
       }
@@ -82,21 +84,24 @@ wss.on("connection", async (ws, req) => {
 app.post("/createPerson", async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     // Check if a person with the same email already exists (case-insensitive)
-    const existingPerson = await PersonModel.findOne({ email: { $regex: `^${email}$`, $options: "i" } });
+    const existingPerson = await PersonModel.findOne({
+      email: { $regex: `^${email}$`, $options: "i" },
+    });
     if (existingPerson) {
       return res.status(400).json({ message: "Email already exists." });
     }
-    
+
     // Create new person if email is unique
     const newPerson = await PersonModel.create(req.body);
     res.status(201).json(newPerson);
   } catch (error) {
-    res.status(500).json({ message: "Error creating person", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error creating person", error: error.message });
   }
 });
-
 
 app.get("/getPersons/all", async (req, res) => {
   try {
@@ -531,7 +536,7 @@ app.post("/createProgress", async (req, res) => {
       progress: progressData,
       timeLeft,
       isDone: false,
-      isRetake: false,
+      isRetake: null,
       lastUpdated: new Date(),
     });
     await progress.save();
@@ -663,29 +668,39 @@ app.put("/updateTimeLeft/:progressId", async (req, res) => {
 });
 
 // ✅ Get All Results
-app.get("/getAllResults/:category/:isDone", async (req, res) => {
+app.get("/getAllResults/:category/:isDone/:isRetake", async (req, res) => {
   try {
-    const { category, isDone } = req.params;
-    const isDoneBoolean = isDone === "true"; // Convert string to boolean
+    const { category, isDone, isRetake } = req.params;
+    let isDoneBoolean;
 
-    // console.log("Fetching progress for:", { category, isDoneBoolean });
+    let isRetakeValue;
 
-    // Fetch all progress documents that match the given category and isDone status
+    if (isRetake === "true") {
+      isDoneBoolean = [true];
+      isRetakeValue = [false, null];
+    } else if (isRetake === "false") {
+      isDoneBoolean = [true, false];
+      isRetakeValue = [true, false, null];
+    } else {
+      isDoneBoolean = [true];
+      isRetakeValue = [true, false, null];
+    }
+
+    // Fetch progress records matching category, isDone, and isRetake status
     const progressRecords = await ProgressModel.find({
       category,
-      isDone: isDoneBoolean,
+      isDone: { $in: isDoneBoolean },
+      isRetake: { $in: isRetakeValue },
     })
       .populate("studentId", "firstname middlename lastname email") // Populate student details
       .populate("progress.contentId")
       .populate("progress.answeredQuestions.questionId")
       .exec();
 
-    // console.log("Progress records fetched:", progressRecords);
-
     res.json(progressRecords);
   } catch (error) {
     console.error("Error fetching progress records:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Failed to fetch progress records" });
   }
 });
 
@@ -805,6 +820,89 @@ app.get("/getCategoryActive/:description", async (req, res) => {
   }
 });
 
+// Update progress for a specific student
+app.put("/approvedRetake/:progressId", async (req, res) => {
+  try {
+    const { progressId } = req.params;
+    const updateData = req.body;
+
+    // ✅ Validate progress ID format
+    if (!mongoose.Types.ObjectId.isValid(progressId)) {
+      return res.status(400).json({ error: "Invalid progress ID" });
+    }
+
+    // Fetch timeDuration from AppSettings
+    const appSettings = await AppSettingsModel.findOne();
+    const timeLeft = appSettings ? appSettings.timeDuration * 60 : 600;
+
+    // ✅ Ensure timeLeft is updated
+    updateData.timeLeft = timeLeft;
+
+    // ✅ Find and update progress, only setting provided fields
+    const updatedProgress = await ProgressModel.findByIdAndUpdate(
+      progressId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    )
+      .populate("studentId", "firstname middlename lastname email") // ✅ Fetch student details
+      .populate({
+        path: "progress.contentId",
+        model: "Contents", // ✅ Ensure correct model name (not "Contents")
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    // ✅ Check if progress exists
+    if (!updatedProgress) {
+      return res.status(404).json({ error: "Progress not found" });
+    }
+
+    res.json(updatedProgress);
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/requestDeclineRetake/:progressId", async (req, res) => {
+  try {
+    const { progressId } = req.params;
+    const updateData = req.body;
+
+    // ✅ Validate progress ID format
+    if (!mongoose.Types.ObjectId.isValid(progressId)) {
+      return res.status(400).json({ error: "Invalid progress ID" });
+    }
+
+    // ✅ Find and update progress, only setting provided fields
+    const updatedProgress = await ProgressModel.findByIdAndUpdate(
+      progressId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    )
+      .populate("studentId", "firstname middlename lastname email") // ✅ Fetch student details
+      .populate({
+        path: "progress.contentId",
+        model: "Contents", // ✅ Ensure correct model name (not "Contents")
+      })
+      .populate({
+        path: "progress.answeredQuestions.questionId",
+        model: "Questions",
+      });
+
+    // ✅ Check if progress exists
+    if (!updatedProgress) {
+      return res.status(404).json({ error: "Progress not found" });
+    }
+
+    res.json(updatedProgress);
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Start Server
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-

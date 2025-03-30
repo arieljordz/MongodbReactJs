@@ -17,7 +17,7 @@ const ResultPage = () => {
     btnBgColor,
   } = useTheme();
   const studentData = getItemWithExpiry("user") || {};
-  const [results, setResults] = useState({});
+  const [results, setResults] = useState([]);
   const [selectedContent, setSelectedContent] = useState(null);
 
   useEffect(() => {
@@ -40,55 +40,81 @@ const ResultPage = () => {
       );
 
       if (response.data && response.data.progress) {
-        setResults(formatProgressData(response.data.progress));
-        // console.log("Fetched response:", response.data);
-        console.log(
-          "Formatted progress:",
-          formatProgressData(response.data.progress)
-        );
+        setResults(formatProgressData(response.data));
+        console.log("Fetched response:", response.data);
+        console.log("Formatted progress:", formatProgressData(response.data));
       } else {
         console.warn("No progress found in DB.");
       }
     } catch (error) {
       console.error("Error fetching progress:", error);
-      toast.error("Failed to load progress.");
     }
   };
 
   // Function to format progress data
-  const formatProgressData = (progressData) =>
-    progressData.map(({ contentId, answeredQuestions }) => ({
-      contentId: contentId?._id,
-      title: contentId?.title || "Unknown Title",
-      totalCount: answeredQuestions.length,
-      correctCount: answeredQuestions.filter((q) => q.isCorrect).length,
-      percentage:
-        answeredQuestions.length > 0
-          ? Math.round(
-              (answeredQuestions.filter((q) => q.isCorrect).length /
-                answeredQuestions.length) *
-                100
-            )
-          : 0,
-      questions: answeredQuestions.map((q) => ({
-        questionId: q.questionId?._id,
-        question: q.questionId?.question || "No question available",
-        answers: {
-          A: q.questionId?.answerA,
-          B: q.questionId?.answerB,
-          C: q.questionId?.answerC,
-          D: q.questionId?.answerD,
-        },
-        correctAnswers: {
-          A: q.questionId?.answerACheck,
-          B: q.questionId?.answerBCheck,
-          C: q.questionId?.answerCCheck,
-          D: q.questionId?.answerDCheck,
-        },
-        selectedAnswers: q.selectedAnswers,
-        isCorrect: q.isCorrect,
-      })),
-    }));
+  const formatProgressData = (progressData) => {
+    const { _id, isRetake, progress } = progressData;
+
+    return progress.map(({ contentId, answeredQuestions }) => {
+      const totalCount = answeredQuestions.length;
+      const correctCount = answeredQuestions.filter((q) => q.isCorrect).length;
+
+      return {
+        progressId: _id,
+        isRetake,
+        contentId: contentId?._id || "Unknown Content ID",
+        title: contentId?.title || "Unknown Title",
+        totalCount,
+        correctCount,
+        percentage:
+          totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0,
+        questions: answeredQuestions.map(
+          ({ questionId, selectedAnswers, isCorrect }) => ({
+            questionId: questionId?._id || "Unknown Question ID",
+            question: questionId?.question || "No question available",
+            answers: {
+              A: questionId?.answerA || "N/A",
+              B: questionId?.answerB || "N/A",
+              C: questionId?.answerC || "N/A",
+              D: questionId?.answerD || "N/A",
+            },
+            correctAnswers: {
+              A: questionId?.answerACheck || false,
+              B: questionId?.answerBCheck || false,
+              C: questionId?.answerCCheck || false,
+              D: questionId?.answerDCheck || false,
+            },
+            selectedAnswers: selectedAnswers || [],
+            isCorrect: isCorrect ?? false, // Default to false if undefined
+          })
+        ),
+      };
+    });
+  };
+
+  const handleRequestRetake = async () => {
+    try {
+      await axios.put(
+        `${API_URL}/requestDeclineRetake/${results[0]?.progressId}`,
+        {
+          isRetake: false,
+        }
+      );
+      fetchProgress();
+      toast.success("Retake has been sent!");
+    } catch (error) {
+      console.error("Error sending retake request:", error);
+    }
+  };
+
+  const retakeStatus = {
+    null: "Request Retake",
+    false: "Request Pending",
+    true: "Request Accepted",
+  };
+
+  // Enable button only if at least one result has isRetake === null
+  const isDisabled = results[0]?.isRetake === null ? false : true;
 
   return (
     <div className={`container mt-6 ${theme}`}>
@@ -106,6 +132,18 @@ const ResultPage = () => {
             theme === "dark" ? "dark-mode text-white" : ""
           }`}
         >
+          <div className="d-flex justify-content-end mb-2">
+            <button
+              className={`btn ${btnBgColor}`}
+              onClick={handleRequestRetake}
+              disabled={isDisabled}
+            >
+              <i className="fa-solid fa-paper-plane"></i>{" "}
+              {results.length > 0
+                ? retakeStatus[results[0].isRetake]
+                : "Request Retake"}
+            </button>
+          </div>
           {results.length > 0 ? (
             <ResultsTable
               results={results}

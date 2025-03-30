@@ -1,14 +1,14 @@
 import React from "react";
 import * as XLSX from "xlsx";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { toast } from "react-toastify";
 
 const DownloadResults = ({ results, btnBgColor }) => {
-  console.log("results:", results);
+  // console.log("results:", results);
 
   // Function to export results to Excel
   const exportToExcel = () => {
     if (!results.length) {
-      alert("No data available!");
+       toast.warning("No data available!");
       return;
     }
 
@@ -70,11 +70,9 @@ const DownloadResults = ({ results, btnBgColor }) => {
 
   return (
     <div>
-      <div className="d-flex justify-content-end mb-2">
-        <button className={`btn ${btnBgColor}`} onClick={exportToExcel}>
-          <i className="fas fa-file-excel"></i> Export to Excel
-        </button>
-      </div>
+      <button className={`btn ${btnBgColor}`} onClick={exportToExcel}>
+        <i className="fas fa-file-excel"></i> Export to Excel
+      </button>
     </div>
   );
 };
