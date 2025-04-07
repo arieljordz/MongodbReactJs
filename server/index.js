@@ -82,7 +82,6 @@ wss.on("connection", async (ws, req) => {
     clearInterval(interval);
   });
 });
-const nodemailer = require("nodemailer");
 
 async function sendVerificationEmail(email, firstName) {
   const { EMAIL_USER, EMAIL_PASS, BASE_URL } = process.env;
