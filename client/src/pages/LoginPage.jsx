@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import GoogleLoginButton from "../customPages/GoogleLoginButton";
-import Register from "../customPages/Register"; 
+import Register from "../customPages/Register";
 import { useTheme } from "../customPages/ThemeContext";
 import axios from "axios";
 
@@ -95,13 +95,14 @@ function LoginPage({ setStudentData }) {
         </div>
 
         {/* Responsive Google button */}
-        <div className="d-grid mb-2">
-          <GoogleLoginButton
-            userDetails={userDetails}
-            setStudentData={setStudentData}
-          />
+        <div className="d-flex justify-content-center">
+          <div className="w-100" style={{ maxWidth: "300px" }}>
+            <GoogleLoginButton
+              userDetails={userDetails}
+              setStudentData={setStudentData}
+            />
+          </div>
         </div>
-
         <div className="text-center my-2">or</div>
 
         <button
