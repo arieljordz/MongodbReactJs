@@ -23,11 +23,14 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
+const nodemailer = require("nodemailer");
+
 // Middleware
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://e-learning-dun-phi.vercel.app"],
+    // origin: ["http://localhost:5173", "https://e-learning-dun-phi.vercel.app"],
+    origin: "*",
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type",
   })
@@ -79,13 +82,55 @@ wss.on("connection", async (ws, req) => {
     clearInterval(interval);
   });
 });
+const nodemailer = require("nodemailer");
+
+async function sendVerificationEmail(email, firstName) {
+  const { EMAIL_USER, EMAIL_PASS, BASE_URL } = process.env;
+
+  if (!EMAIL_USER || !EMAIL_PASS || !BASE_URL) {
+    console.error("❌ Missing required environment variables.");
+    return;
+  }
+
+  try {
+    // Create the transporter
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+    });
+
+    // Construct verification URL
+    const verificationUrl = `${BASE_URL}/verify?email=${encodeURIComponent(email)}`;
+
+    // Compose the email
+    const mailOptions = {
+      from: `"Your App Name" <${EMAIL_USER}>`,
+      to: email,
+      subject: "Verify Your Email",
+      html: `
+        <p>Hello ${firstName},</p>
+        <p>Thank you for registering! Please verify your email address by clicking the link below:</p>
+        <p><a href="${verificationUrl}" target="_blank" rel="noopener noreferrer">Verify Email</a></p>
+        <p>If you did not request this, please ignore this email.</p>
+      `,
+    };
+
+    // Send email
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+  } catch (error) {
+    console.error("❌ Failed to send email:", error.message);
+  }
+}
 
 // Person End Points
 app.post("/createPerson", async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, firstname } = req.body;
 
-    // Check if a person with the same email already exists (case-insensitive)
     const existingPerson = await PersonModel.findOne({
       email: { $regex: `^${email}$`, $options: "i" },
     });
@@ -93,13 +138,15 @@ app.post("/createPerson", async (req, res) => {
       return res.status(400).json({ message: "Email already exists." });
     }
 
-    // Create new person if email is unique
     const newPerson = await PersonModel.create(req.body);
-    res.status(201).json(newPerson);
+
+    // Send email after successful creation
+    await sendVerificationEmail(email, firstname);
+    console.log("Sending:");
+    res.status(201).json({ message: "User created and email sent!", success: true });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating person", error: error.message });
+    console.error("Error creating person or sending email:", error);
+    res.status(500).json({ message: "Error creating person", error: error.message });
   }
 });
 

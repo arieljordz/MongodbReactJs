@@ -31,8 +31,11 @@ npm install mongoose
 npm install cors
 npm install nodemon
 npm install ws
+npm install nodemailer
 
 node index.js
+
+
 
 
 

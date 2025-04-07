@@ -36,8 +36,8 @@ function GoogleLoginButton({ userDetails, setStudentData }) {
   const validateUser = (userData) => {
     return students.find(
       (student) =>
-        student.email === userData.email &&
-        student.userType === userData.userType
+        student.email === userData.email 
+        // && student.userType === userData.userType
     );
   };
 

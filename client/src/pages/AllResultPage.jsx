@@ -71,11 +71,11 @@ const AllResultPage = () => {
     const groupedResults = {};
 
     data.forEach(({ studentId, progress, isRetake, _id }) => {
-      const studentKey = studentId._id;
+      const studentKey = studentId?._id;
       if (!groupedResults[studentKey]) {
         groupedResults[studentKey] = {
-          studentId: studentId._id,
-          studentName: `${studentId.firstname} ${studentId.middlename} ${studentId.lastname}`,
+          studentId: studentId?._id,
+          studentName: `${studentId?.firstname} ${studentId?.middlename} ${studentId?.lastname}`,
           isRetake: isRetake,
           progressId: _id,
           contents: [],

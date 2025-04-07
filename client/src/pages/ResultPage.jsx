@@ -101,7 +101,7 @@ const ResultPage = () => {
         }
       );
       fetchProgress();
-      toast.success("Retake has been sent!");
+      toast.success("Request has been sent!");
     } catch (error) {
       console.error("Error sending retake request:", error);
     }

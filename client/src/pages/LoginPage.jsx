@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import GoogleLoginButton from "../customPages/GoogleLoginButton";
+import Register from "../customPages/Register"; 
 import { useTheme } from "../customPages/ThemeContext";
 import axios from "axios";
 
@@ -7,6 +8,7 @@ function LoginPage({ setStudentData }) {
   const API_URL = import.meta.env.VITE_BASE_API_URL;
   const { theme } = useTheme();
   const [categories, setCategories] = useState([]);
+  const [showRegister, setShowRegister] = useState(false);
   const [userDetails, setUserDetails] = useState({
     userType: "student",
     category: "",
@@ -45,13 +47,24 @@ function LoginPage({ setStudentData }) {
     }));
   };
 
+  if (showRegister) {
+    return (
+      <Register
+        onBackToLogin={() => setShowRegister(false)}
+        categories={categories}
+      />
+    );
+  }
+
   return (
-    <div className={`d-flex flex-column justify-content-center align-items-center vh-100 bg-light${theme}`}>
+    <div
+      className={`d-flex flex-column justify-content-center align-items-center vh-100 bg-light${theme}`}
+    >
       <div className="card shadow p-4 text-start" style={{ width: "350px" }}>
         <h3 className="mb-4 text-center">Login</h3>
 
         {/* User Type Selection */}
-        <div className="mb-3">
+        {/* <div className="mb-3">
           <label className="form-label">Role</label>
           <select
             className="form-select"
@@ -62,7 +75,7 @@ function LoginPage({ setStudentData }) {
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Category Selection */}
         <div className="mb-3">
@@ -81,8 +94,22 @@ function LoginPage({ setStudentData }) {
           </select>
         </div>
 
-        {/* Google Login Button */}
-        <GoogleLoginButton userDetails={userDetails} setStudentData={setStudentData} />
+        {/* Responsive Google button */}
+        <div className="d-grid mb-2">
+          <GoogleLoginButton
+            userDetails={userDetails}
+            setStudentData={setStudentData}
+          />
+        </div>
+
+        <div className="text-center my-2">or</div>
+
+        <button
+          className="btn btn-outline-primary w-100"
+          onClick={() => setShowRegister(true)}
+        >
+          Sign up
+        </button>
       </div>
     </div>
   );
